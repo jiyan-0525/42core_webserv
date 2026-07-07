@@ -4,8 +4,6 @@
 
 # Explanation
 
-The computer is already connected to the network.
-
 This documentation explains how to connect my application (a C++ server running on my computer) to the network and allow it to communicate through sockets.
 
 The OS already has one or more network interfaces (Ethernet, Wi-Fi, etc.) connected to the network.
