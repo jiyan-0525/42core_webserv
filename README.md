@@ -295,6 +295,38 @@ Your server sends:
 send(client_socket, response, ...)
 ```
 
+# The big picture
+
+```
+Browser (Chrome)
+        │
+        ▼
+1. Connect to my server
+        │
+        ▼
+2. Send an HTTP request
+        │
+        ▼
+3. My server reads the request
+        │
+        ▼
+4. My server understands the request
+        │
+        ▼
+5. My server decides what to do
+        │
+        ▼
+6. My server generates an HTTP response
+        │
+        ▼
+7. My server sends the response
+        │
+        ▼
+Browser displays the page
+```
+
+Everything in the project belongs somewhere in this pipeline.
+
 
 
 
