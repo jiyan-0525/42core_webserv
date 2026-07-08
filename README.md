@@ -191,4 +191,121 @@ close(server_fd);
 return 0;
 ```
 
+# Project planification
+
+## TO DO at the end:  
+
+### Step 7: Multiple clients - DIFFICULT  
+
+Don't handle only one browser.  
+Handle many simultaneously.  
+This is where we will be using things like poll() (or the multiplexing API).  
+
+### Step 8: CGI - DIFFICULT  
+
+Functions needed for that part: fork(), pipe(), dup2(), execve()  
+If Chrome asks for ```GET /hello.py```  
+The C++ server cannot execute Python, instead:  
+
+```
+Chrome
+      │
+      ▼
+C++ Server
+      │
+      ▼
+fork()
+      │
+      ▼
+Child process
+      │
+      ▼
+execve("python", "hello.py")
+      │
+      ▼
+Python outputs HTML
+      │
+      ▼
+Parent server
+      │
+      ▼
+Chrome
+```
+
+## TO DO now:  
+
+### Step 1: Establish the connection (Networking) -> Look at the explanation part refering to this topic.  
+
+Small project goal:  
+Create a C++ server that uses sockets to communicate through the operating system's network stack.
+
+The server should:    
+create a socket  
+assign it an address and port  
+listen for incoming connections  
+accept a client connection  
+exchange a small amount of HTTP data with the client   
+
+Example:  
+Chrome connects to the server:  
+
+```
+Chrome
+   |
+   | HTTP request
+   ▼
+C++ Server
+   |
+   | HTTP response
+   ▼
+Chrome
+```
+
+At the end of this step, the server can successfully establish a TCP connection and send/receive a simple HTTP message.
+
+### Step 2 to 6: The C++ server receives and parses the request, decides what to do, creates and sends an HTTP response.  
+
+### Step 2: Receive the HTTP request - EASY
+
+"What did the client send me?"  
+Chrome send an HTTP request  
+The C++ server reads the bytes: recv()  
+Now the server has the raw text, but it does not understand it yet.  
+
+### Step 3: Receive the HTTP request - Parsing - DIFFICULT
+
+"What does this request mean?"  
+The C++ server transforms raw data into a structured object (parsing), to understand the request of the client.  
+
+### Step 4: Process the request - DIFFICULT
+
+"What should I do with this request?"  
+According to the "Request" the server decides the "Action".  
+
+### Step 5: Create the HTTP response - DIFFICULT
+
+"How do I format my answer so Chrome understands it?"  
+The C++ server needs to generate a formated answer.
+
+### Step 6: Send the HTTP response - EASY
+
+"How do I send my answer back?"  
+Your server sends:
+```
+send(client_socket, response, ...)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
