@@ -328,6 +328,165 @@ Browser displays the page
 Everything in the project belongs somewhere in this pipeline.
 
 
+# Project Organization
+
+## Person 1 – Configuration + HTTP Request Parsing
+
+### Responsibility
+This person is responsible for **understanding the server's input**.
+
+### Configuration
+- Read the configuration file
+- Tokenize it
+- Parse it
+- Validate it
+- Create `ServerConfig`, `LocationConfig`, etc.
+
+### HTTP Request
+- Parse the raw HTTP request
+- Parse request headers
+- Parse the request body
+- Handle chunked encoding (if required)
+- Build an `HTTPRequest` object
+
+### Output
+
+```text
+config.conf
+        │
+        ▼
+Configuration objects
+
+Raw HTTP request
+        │
+        ▼
+HTTPRequest object
+```
+
+---
+
+## Person 2 – Networking + Client Management
+
+### Responsibility
+This person is responsible for **transporting data between clients and the server**.
+
+### Networking
+- `socket()`
+- `bind()`
+- `listen()`
+- `accept()`
+- `poll()`
+
+### Client Management
+- Handle multiple clients
+- Read data from sockets
+- Write data to sockets
+- Manage the connection lifecycle
+- Maintain client state
+- Handle keep-alive connections
+- Detect when a complete HTTP request has been received
+
+> **Note:** This person does **not** need to understand HTTP methods such as `GET`, `POST`, or `DELETE`. Their job is simply to receive and send bytes.
+
+### Workflow
+
+```text
+Client
+   │
+socket
+   │
+poll
+   │
+read bytes
+   │
+complete HTTP request
+   │
+pass raw request to parser
+```
+
+---
+
+## Person 3 – Response Generation + CGI
+
+### Responsibility
+This person is responsible for **deciding how to answer an HTTP request** and producing the final response.
+
+### Request Handling
+- Routing
+- `GET`
+- `POST`
+- `DELETE`
+- Serve static files
+- Directory listing
+- MIME type detection
+- Error page generation
+
+### CGI
+- Detect CGI requests
+- Execute CGI programs
+- Read CGI output
+- Convert CGI output into an HTTP response
+
+### HTTP Response
+- Build the `HTTPResponse` object
+- Set status code
+- Set response headers
+- Set response body
+
+### Input / Output
+
+```text
+HTTPRequest
+        │
+        ▼
+Request handling
+        │
+        ├── Static files
+        ├── CGI
+        ├── Error pages
+        └── HTTP methods
+        │
+        ▼
+HTTPResponse
+```
+
+---
+
+# Overall Architecture
+
+```text
+                Client
+                   │
+                   ▼
+     Person 2 - Network Layer
+                   │
+           Raw HTTP Request
+                   │
+                   ▼
+ Person 1 - Request Parser
+                   │
+             HTTPRequest
+                   │
+                   ▼
+ Person 3 - Request Handler
+      ├── Routing
+      ├── Static Files
+      ├── CGI
+      ├── GET / POST / DELETE
+      └── Error Pages
+                   │
+             HTTPResponse
+                   │
+                   ▼
+     Person 2 - Network Layer
+                   │
+                   ▼
+                Client
+```
+
+
+
+
 
 
 
