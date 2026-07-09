@@ -3,6 +3,7 @@
  - https://beej.us/guide/bgnet/
  - https://medium.com/from-the-scratch/http-server-what-do-you-need-to-know-to-build-a-simple-http-server-from-scratch-d1ef8945e4fa
  - https://m4nnb3ll.medium.com/webserv-building-a-non-blocking-web-server-in-c-98-a-42-project-04c7365e4ec7
+- https://en.wikipedia.org/wiki/Berkeley_sockets
 
 # Explanation
 
