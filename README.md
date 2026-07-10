@@ -486,8 +486,32 @@ HTTPResponse
                    ▼
                 Client
 ```
-
-
+```bash
+42core_webserv/
+├── Makefile
+├── includes/
+│   ├── Config.hpp          # Config data structures
+│   ├── ConfigParser.hpp    # Parser class
+│   ├── Server.hpp          # Server class (later)
+│   ├── Client.hpp          # Client connection (later)
+│   └── HttpRequest.hpp     # HTTP request parser (later)
+├── srcs/
+│   ├── main.cpp
+│   ├── config/
+│   │   ├── Config.cpp
+│   │   └── ConfigParser.cpp
+│   ├── server/
+│   │   └── Server.cpp
+│   ├── client/
+│   │   └── Client.cpp
+│   └── http/
+│       ├── HttpRequest.cpp
+│       └── HttpResponse.cpp
+├── config/
+│   └── default.conf        # Default config file
+└── www/                    # Static website root
+    └── index.html
+```
 
 
 
