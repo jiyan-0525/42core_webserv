@@ -1,0 +1,201 @@
+Webserv 42 — Full Logic Explained
+
+🎯 What is the project?
+You're building an HTTP web server from scratch in C++98, similar to a simplified NGINX. When a browser (like Chrome) connects to your server, it should be able to:
+
+Serve static files (HTML, CSS, images)
+Handle HTTP methods (GET, POST, DELETE)
+Execute CGI scripts (e.g., Python)
+Handle multiple clients simultaneously using non-blocking I/O (poll())
+Be configured via a config file (NGINX-style syntax)
+🏗️ The Big Picture — The Request/Response Pipeline
+Every single thing in your project fits inside this pipeline:
+
+Browser (Chrome) types http://localhost:8080
+        │
+        ▼
+  ┌─────────────────────────────────────┐
+  │  1. CONFIG PARSER                   │  ← Read default.conf at startup
+  │     Loads server settings:          │     (port, root, allowed methods,
+  │     locations, CGI paths, etc.)     │     error pages, body size limits)
+  └─────────────────────────────────────┘
+        │
+        ▼
+  ┌─────────────────────────────────────┐
+  │  2. SERVER (Networking Layer)       │  ← socket() → bind() → listen()
+  │     Creates listening sockets for   │     One socket per "listen" port
+  │     each server block in config     │     (8080, 8081, etc.)
+  └─────────────────────────────────────┘
+        │
+        ▼
+  ┌─────────────────────────────────────┐
+  │  3. EVENT LOOP (poll())             │  ← The HEART of the server
+  │     Monitors ALL file descriptors   │     Non-blocking: never stuck
+  │     (listening sockets + clients)   │     waiting on one client
+  │     Decides: new connection? or     │
+  │     data from existing client?      │
+  └─────────────────────────────────────┘
+        │                       │
+  (new connection)        (data ready)
+        │                       │
+        ▼                       ▼
+  ┌──────────────┐   ┌──────────────────────┐
+  │  4. accept() │   │  5. recv() / read()  │
+  │  Creates a   │   │  Read raw bytes from │
+  │  new client  │   │  existing client     │
+  │  socket      │   │                      │
+  └──────────────┘   └──────────────────────┘
+                              │
+                              ▼
+                ┌─────────────────────────────┐
+                │  6. HTTP REQUEST PARSER      │
+                │  Raw text → structured obj  │
+                │  "GET /index.html HTTP/1.1" │
+                │   → method: GET             │
+                │   → path: /index.html       │
+                │   → headers: Host, etc.     │
+                │   → body: (for POST)        │
+                └─────────────────────────────┘
+                              │
+                              ▼
+                ┌─────────────────────────────┐
+                │  7. REQUEST HANDLER (Router) │
+                │  Matches path to a location │
+                │  block from the config      │
+                │                             │
+                │  /          → serve www/    │
+                │  /files     → directory list│
+                │  /upload    → handle upload │
+                │  /cgi-bin   → execute CGI   │
+                └─────────────────────────────┘
+                    │       │       │       │
+                   GET    POST   DELETE   CGI
+                    │       │       │       │
+                    ▼       ▼       ▼       ▼
+                ┌─────────────────────────────┐
+                │  8. HTTP RESPONSE BUILDER    │
+                │  "HTTP/1.1 200 OK\r\n"      │
+                │  "Content-Type: text/html"  │
+                │  "\r\n"                     │
+                │  "<html>...</html>"         │
+                └─────────────────────────────┘
+                              │
+                              ▼
+                ┌─────────────────────────────┐
+                │  9. send() back to client   │
+                └─────────────────────────────┘
+                              │
+                              ▼
+                        Browser renders
+📦 Your Project Components Explained
+1. Config Parser (ConfigParser + Config)
+Purpose: Read 
+default.conf
+ at startup and turn it into C++ data structures.
+
+default.conf  →  ConfigParser  →  vector<ServerConfig>
+Each ServerConfig holds:
+
+listen port (8080, 8081…)
+server_name (localhost, example.com)
+client_max_body_size (10M)
+error_page map (404 → /errors/404.html)
+vector<LocationConfig> — one per location {} block
+Each LocationConfig holds:
+
+path (/, /upload, /cgi-bin)
+root directory (./www)
+index file (
+index.html
+)
+allowed methods (GET, POST, DELETE)
+autoindex (on/off)
+CGI settings (extension, interpreter path)
+upload directory
+2. Server (Networking Layer)
+Purpose: Create sockets and manage the event loop.
+
+Key flow:
+
+cpp
+// For each server in config:
+socket()      // Create a socket
+bind()        // Attach it to IP:port
+listen()      // Start accepting connections
+// Then the main event loop:
+while (true) {
+    poll(fds, ...)    // Wait for ANY activity on ANY socket
+    
+    for each fd with activity:
+        if (fd is a listening socket)
+            accept()  → create new Client
+        else if (fd has data to read)
+            recv()    → read into Client's buffer
+        else if (fd is ready to write)
+            send()    → send response back
+}
+Why poll()? Without it, accept() and recv() are blocking — your server freezes waiting for one client and can't serve anyone else. poll() tells you which sockets have activity, so you only read/write when data is actually ready. This is the hardest part of the project.
+
+3. Client (Connection State)
+Purpose: Track each connected browser/client.
+
+Each Client object holds:
+
+The client socket fd
+The receive buffer (accumulates bytes until a full HTTP request is ready)
+The parsed HTTPRequest (once complete)
+The HTTPResponse to send back
+Connection state (reading request? sending response? done?)
+4. HTTP Request Parser
+Purpose: Turn raw text into a structured object.
+
+Raw text:                          Parsed object:
+"GET /index.html HTTP/1.1\r\n"    method = "GET"
+"Host: localhost:8080\r\n"        path = "/index.html"
+"Content-Length: 0\r\n"           version = "HTTP/1.1"
+"\r\n"                            headers["Host"] = "localhost:8080"
+                                  body = ""
+Key challenges:
+
+Detecting when the full request has arrived (look for \r\n\r\n)
+Parsing Content-Length for POST bodies
+Handling chunked transfer encoding
+5. HTTP Response Builder
+Purpose: Construct the response string.
+
+For a GET /index.html:
+
+HTTP/1.1 200 OK\r\n
+Content-Type: text/html\r\n
+Content-Length: 1234\r\n
+\r\n
+<html>...contents of www/index.html...</html>
+For a 404:
+
+HTTP/1.1 404 Not Found\r\n
+Content-Type: text/html\r\n
+Content-Length: 45\r\n
+\r\n
+<html><body>404 Not Found</body></html>
+6. CGI (Common Gateway Interface)
+Purpose: Execute external scripts (Python, PHP, etc.)
+
+Request: GET /cgi-bin/hello.py
+Server does:
+    pipe()          → create a pipe for the child's output
+    fork()          → create a child process
+    
+    Child process:
+        dup2()      → redirect stdout to the pipe
+        execve()    → replace itself with: /usr/bin/python3 hello.py
+        
+    Parent process:
+        read(pipe)  → read the script's output
+        Build HTTP response from the output
+        send() to client
+🗺️ Your Team Split (from README)
+
+Person	Responsibility	Classes
+Person 1	Config parsing + HTTP request parsing	ConfigParser, Config, HTTPRequest
+Person 2	Networking + poll() loop + client management	Server, Client
+Person 3	Request handling, routing, response, CGI	HTTPResponse, CGI logic

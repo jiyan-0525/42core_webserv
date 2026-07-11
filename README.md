@@ -5,6 +5,7 @@
  - https://m4nnb3ll.medium.com/webserv-building-a-non-blocking-web-server-in-c-98-a-42-project-04c7365e4ec7
 - https://en.wikipedia.org/wiki/Berkeley_sockets
 - https://datatracker.ietf.org/doc/html/rfc2616
+- https://www.freecodecamp.org/news/learn-http-methods-like-get-post-and-delete-a-handbook-with-code-examples/#heading-get-method
 # Explanation
 
 This documentation explains how to connect my application (a C++ server running on my computer) to the network and allow it to communicate through sockets.
