@@ -123,6 +123,107 @@ ServerConfig ConfigParser::_parseServerBlock() {
     return server;
 }
 
-locationConfig ConfigParser:: _parseLocationBlock() {
-    
+LocationConfig ConfigParser:: _parseLocationBlock()
+{
+    LocationConfig location;
+    location.path = _consumeToken();
+    _expectToken("{");
+
+    while (_pos < _tokens.size() && _currenTocken() != "}")
+    {
+        std::string directive = _consumeToken();
+        if (directive == "root")
+        {
+            location.root = _consumeToken();
+            _expectToken(";");
+        }
+        else if (directive == "index")
+        {
+            location.index = _consumeToken();
+            _expectToken(";");
+        }
+        else if (directive == "methods")
+        {
+            while (_pos < _tokens.size() && _currenTocken() != ";")
+            {
+                std::string method = _consumeToken();
+                if (method == "GET" || method == "POST" || method == "DELETE")
+                {
+                    location.methods.push_back(method);
+                }
+            }
+        }
+        else if (directive == "autoindex")
+        {
+            std::string value = _consumeToken();
+            if (value == "on")
+                location.autoindex = true;
+            else if (value == "off")
+                location.autoindex = false;
+            else
+                throw std::runtime_error("ConfigParser: invalid value for autoindex: '" + value + "'");
+            _expectToken(";");
+        }
+        else if (directive == "upload_dir")
+        {
+            location.upload_dir = _consumeToken();
+            _expectToken(";");
+        }
+        else if (directive == "client_max_body_size")
+        {
+            location.client_max_body_size = _parseSize(_consumeToken());
+            _expectToken(";");
+        }
+        else if (directive == "cgi_extension")
+        {
+            location.cgi_extension = _consumeToken();
+            _expectToken(";");
+        }
+        else if (directive == "cgi_path")
+        {
+            location.cgi_path = _consumeToken();
+            _expectToken(";");
+        }
+        else
+        {
+            throw std::runtime_error("ConfigParser: unknown directive '" + directive + "'");
+        }
+    }
+    _expectToken("}");
+    return location;
+}
+
+std::string ConfigParser::_currenTocken() const {
+    if (_pos >= _tokens.size())
+        throw std::runtime_error("ConfigParser: unexpected end of tokens");
+    return _tokens[_pos];
+}
+
+std::string ConfigParser::_consumeToken() {
+   std::string token = _consumeToken();
+    _pos++;
+    return token;
+}
+
+void ConfigParser::_expectToken(const std::string& expected) {
+    std::string token = _consumeToken();
+    if (token != expected)
+        throw std::runtime_error("ConfigParser: expected '" + expected + "', got '" + token + "'");
+}
+
+size_t ConfigParser::_parseSize(const std::string& sizeStr) {
+    if (sizeStr.empty())
+        return 0;
+
+    char lastChar = sizeStr[sizeStr.size() - 1];
+
+    if (lastChar == 'K' || lastChar == 'k') {
+        return std::atoi(sizeStr.c_str()) * 1024;
+    } else if (lastChar == 'M' || lastChar == 'm') {
+        return std::atoi(sizeStr.c_str()) * 1024 * 1024;
+    } else if (lastChar == 'G' || lastChar == 'g') {
+        return std::atoi(sizeStr.c_str()) * 1024 * 1024 * 1024;
+    } else {
+        return std::atoi(sizeStr.c_str());
+    }
 }
