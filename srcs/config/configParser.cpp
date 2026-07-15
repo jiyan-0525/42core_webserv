@@ -63,3 +63,66 @@ void ConfigParser::_tokenize(const std::string& content) {
 
 // step 3: parser
 
+void ConfigParser::_parse() {
+    while (_pos < _tokens.size())
+    {
+        if (_currenTocken() == "server")
+        {
+            _consumeToken();
+            _servers.push_back(_parseServerBlock());
+        }
+        else
+        {
+            throw std::runtime_error("ConfigParser: expected 'server' , got '" + _currenTocken() + "'");
+        }
+    }
+    if (_servers.empty())
+    {
+        throw std::runtime_error("No server blocks found in configuration.");
+    }
+}
+
+ServerConfig ConfigParser::_parseServerBlock() {
+    ServerConfig server;
+    _expectTocken("{");
+    while (_pos < _tokens.size() && _currenTocken() != "}")
+    {
+        std::string directive = _consumeToken();
+        if (directive == "listen")
+        {
+            server.port = std::atoi(_consumeToken().c_str());
+            _expectTocken(";");
+        }
+        else if (directive == "server_name")
+        {
+            server.server_name = _consumeToken();
+            _expectToken(";");
+        }
+        else if (directive == "client_max_body_size")
+        {
+            server.client_max_body_size = _parseSize(_consumeToken());
+            _expectToken(";");
+        }
+        else if (directive == "error_page")
+        {
+            int error_code = std::atoi(_consumeToken().c_str());
+            std::string page = _consumeToken();
+            server.error_pages[error_code] = page;
+            _expectToken(";");
+        }
+        else if (directive == "location")
+        {
+            server.locations.push_back(_parseLocationBlock());
+        }
+        else
+        {
+            throw std::runtime_error("ConfigParser: unknown directive '" + directive + "'");
+        }
+    }
+    _expectTocken("}");
+    return server;
+}
+
+locationConfig ConfigParser:: _parseLocationBlock() {
+    
+}
