@@ -1,4 +1,8 @@
-#include "ConfigParser.hpp"
+#include "configParser.hpp"
+#include <fstream>
+#include <sstream>
+#include <stdexcept>
+#include <cstdlib>
 
 ConfigParser::ConfigParser(const std::string& filename) : _filepath(filename), _pos(0) {
     std::string content = _readFile(filename);
@@ -8,13 +12,13 @@ ConfigParser::ConfigParser(const std::string& filename) : _filepath(filename), _
 
 ConfigParser::~ConfigParser() {}
 
-const std::vector<Config>& ConfigParser::getServers() const {
+const std::vector<ServerConfig>& ConfigParser::getServers() const {
     return _servers;
 }
 
 // step 1: read file
 std::string ConfigParser::_readFile(const std::string& filepath) {
-    std::ifstream file(filepath);
+    std::ifstream file(filepath.c_str());
     if (!file.is_open()) {
         throw std::runtime_error("Could not open config file: " + filepath);
     }
@@ -24,19 +28,19 @@ std::string ConfigParser::_readFile(const std::string& filepath) {
     return ss.str();
 }
 
-// step2: tokenize
+// step 2: tokenize
 void ConfigParser::_tokenize(const std::string& content) {
     std::string current;
     for (size_t i = 0; i < content.size(); i++)
     {
-        char = content[i];
+        char c = content[i]; // ✅ was: "char = content[i];" — missing variable name
         if (c == '#')
         {
             while (i < content.size() && content[i] != '\n')
                 i++;
             continue;
         }
-        if (c =='{' || c == '}' || c == ';')
+        if (c == '{' || c == '}' || c == ';')
         {
             if (!current.empty())
             {
@@ -61,19 +65,19 @@ void ConfigParser::_tokenize(const std::string& content) {
         _tokens.push_back(current);
 }
 
-// step 3: parser
+// step 3: parse
 
 void ConfigParser::_parse() {
     while (_pos < _tokens.size())
     {
-        if (_currenTocken() == "server")
+        if (_currentToken() == "server")
         {
             _consumeToken();
             _servers.push_back(_parseServerBlock());
         }
         else
         {
-            throw std::runtime_error("ConfigParser: expected 'server' , got '" + _currenTocken() + "'");
+            throw std::runtime_error("ConfigParser: expected 'server', got '" + _currentToken() + "'");
         }
     }
     if (_servers.empty())
@@ -84,14 +88,14 @@ void ConfigParser::_parse() {
 
 ServerConfig ConfigParser::_parseServerBlock() {
     ServerConfig server;
-    _expectTocken("{");
-    while (_pos < _tokens.size() && _currenTocken() != "}")
+    _expectToken("{"); // ✅ was: _expectTocken — typo
+    while (_pos < _tokens.size() && _currentToken() != "}")
     {
         std::string directive = _consumeToken();
         if (directive == "listen")
         {
             server.port = std::atoi(_consumeToken().c_str());
-            _expectTocken(";");
+            _expectToken(";");
         }
         else if (directive == "server_name")
         {
@@ -119,17 +123,17 @@ ServerConfig ConfigParser::_parseServerBlock() {
             throw std::runtime_error("ConfigParser: unknown directive '" + directive + "'");
         }
     }
-    _expectTocken("}");
+    _expectToken("}"); // ✅ was: _expectTocken — typo
     return server;
 }
 
-LocationConfig ConfigParser:: _parseLocationBlock()
+LocationConfig ConfigParser::_parseLocationBlock()
 {
     LocationConfig location;
     location.path = _consumeToken();
     _expectToken("{");
 
-    while (_pos < _tokens.size() && _currenTocken() != "}")
+    while (_pos < _tokens.size() && _currentToken() != "}")
     {
         std::string directive = _consumeToken();
         if (directive == "root")
@@ -144,7 +148,7 @@ LocationConfig ConfigParser:: _parseLocationBlock()
         }
         else if (directive == "methods")
         {
-            while (_pos < _tokens.size() && _currenTocken() != ";")
+            while (_pos < _tokens.size() && _currentToken() != ";")
             {
                 std::string method = _consumeToken();
                 if (method == "GET" || method == "POST" || method == "DELETE")
@@ -152,6 +156,7 @@ LocationConfig ConfigParser:: _parseLocationBlock()
                     location.methods.push_back(method);
                 }
             }
+            _expectToken(";"); // ✅ was missing — semicolon was never consumed
         }
         else if (directive == "autoindex")
         {
@@ -193,14 +198,14 @@ LocationConfig ConfigParser:: _parseLocationBlock()
     return location;
 }
 
-std::string ConfigParser::_currenTocken() const {
+std::string ConfigParser::_currentToken() const {
     if (_pos >= _tokens.size())
         throw std::runtime_error("ConfigParser: unexpected end of tokens");
     return _tokens[_pos];
 }
 
 std::string ConfigParser::_consumeToken() {
-   std::string token = _consumeToken();
+    std::string token = _currentToken(); // ✅ was: _consumeToken() — infinite recursion!
     _pos++;
     return token;
 }
@@ -218,12 +223,12 @@ size_t ConfigParser::_parseSize(const std::string& sizeStr) {
     char lastChar = sizeStr[sizeStr.size() - 1];
 
     if (lastChar == 'K' || lastChar == 'k') {
-        return std::atoi(sizeStr.c_str()) * 1024;
+        return (size_t)std::atoi(sizeStr.c_str()) * 1024;
     } else if (lastChar == 'M' || lastChar == 'm') {
-        return std::atoi(sizeStr.c_str()) * 1024 * 1024;
+        return (size_t)std::atoi(sizeStr.c_str()) * 1024 * 1024;
     } else if (lastChar == 'G' || lastChar == 'g') {
-        return std::atoi(sizeStr.c_str()) * 1024 * 1024 * 1024;
+        return (size_t)std::atoi(sizeStr.c_str()) * 1024 * 1024 * 1024;
     } else {
-        return std::atoi(sizeStr.c_str());
+        return (size_t)std::atoi(sizeStr.c_str());
     }
 }

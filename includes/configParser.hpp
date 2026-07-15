@@ -1,6 +1,6 @@
 #ifndef CONFIGPARSER_HPP
 # define CONFIGPARSER_HPP
-# include "Config.hpp"
+# include "config.hpp"
 # include <string>
 # include <vector>
 
@@ -8,35 +8,34 @@ class ConfigParser {
 public:
     ConfigParser(const std::string& filename);
     ~ConfigParser();
-    const std::vector<Config>& getServers() const;
+    const std::vector<ServerConfig>& getServers() const;
 
 private:
-    std::string  _filepath;
+    std::string              _filepath;
     std::vector<std::string> _tokens;
-    std::vector<Config> _servers;
-    size_t  _pos;
-    
+    std::vector<ServerConfig> _servers;
+    size_t                   _pos;
+
     // step 1: read file
-   std::string _readFile(const std::string& filepath);
-    
-   // step 2: tokenize
-   void _tokenize(const std::string& content);
+    std::string    _readFile(const std::string& filepath);
 
-   // step 3: parse
-   void _parse();
-   serverConfig _parseServerBlock();
-   locationConfig _parseLocationBlock();
+    // step 2: tokenize
+    void           _tokenize(const std::string& content);
 
-   // helper functions
-   std::string _currenTocken() const;
-   std::string _consumeToken();
-   void _expectToken(const std::string& expected);
-   size_t _parseSize(const std::string& sizeStr);
+    // step 3: parse
+    void           _parse();
+    ServerConfig   _parseServerBlock();
+    LocationConfig _parseLocationBlock();
 
-   // non-copyable
-   configParser(const configParser& other);
-   configParser& operator=(const configParser& other);
-    
+    // helper functions
+    std::string _currentToken() const;
+    std::string _consumeToken();
+    void        _expectToken(const std::string& expected);
+    size_t      _parseSize(const std::string& sizeStr);
+
+    // non-copyable
+    ConfigParser(const ConfigParser& other);
+    ConfigParser& operator=(const ConfigParser& other);
 };
 
 #endif
