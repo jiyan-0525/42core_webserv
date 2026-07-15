@@ -33,7 +33,7 @@ void ConfigParser::_tokenize(const std::string& content) {
     std::string current;
     for (size_t i = 0; i < content.size(); i++)
     {
-        char c = content[i]; // ✅ was: "char = content[i];" — missing variable name
+        char c = content[i];
         if (c == '#')
         {
             while (i < content.size() && content[i] != '\n')
@@ -123,7 +123,7 @@ ServerConfig ConfigParser::_parseServerBlock() {
             throw std::runtime_error("ConfigParser: unknown directive '" + directive + "'");
         }
     }
-    _expectToken("}"); // ✅ was: _expectTocken — typo
+    _expectToken("}");
     return server;
 }
 
@@ -156,7 +156,7 @@ LocationConfig ConfigParser::_parseLocationBlock()
                     location.methods.push_back(method);
                 }
             }
-            _expectToken(";"); // ✅ was missing — semicolon was never consumed
+            _expectToken(";");
         }
         else if (directive == "autoindex")
         {
@@ -205,7 +205,7 @@ std::string ConfigParser::_currentToken() const {
 }
 
 std::string ConfigParser::_consumeToken() {
-    std::string token = _currentToken(); // ✅ was: _consumeToken() — infinite recursion!
+    std::string token = _currentToken();
     _pos++;
     return token;
 }
