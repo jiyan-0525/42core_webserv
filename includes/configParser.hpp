@@ -1,9 +1,11 @@
 #ifndef CONFIGPARSER_HPP
 # define CONFIGPARSER_HPP
 # include "config.hpp"
+# include <string>
 # include <string_view>
 # include <charconv>
-# include <string>
+# include <cerrno>
+# include <limits>
 # include <vector>
 
 class ConfigParser {

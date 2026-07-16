@@ -20,7 +20,7 @@ const std::vector<ServerConfig>& ConfigParser::getServers() const {
 std::string ConfigParser::_readFile(const std::string_view filepath) {
     std::ifstream file(filepath.data());
     if (!file.is_open()) {
-        throw std::runtime_error("Could not open config file: " + std::string(filepath));
+        throw std::runtime_error(std::string("Could not open config file: ") + std::string(filepath));
     }
     std::stringstream ss;
     ss << file.rdbuf();
@@ -212,43 +212,36 @@ std::string ConfigParser::_consumeToken() {
 void ConfigParser::_expectToken(const std::string_view expected) {
     std::string token = _consumeToken();
     if (token != expected)
-        throw std::runtime_error("ConfigParser: expected '" + std::string(expected) + "', got '" + token + "'");
+        throw std::runtime_error(std::string("ConfigParser: expected '") + std::string(expected) + "', got '" + token + "'");
 }
 
 size_t ConfigParser::_parseSize(const std::string_view sizeStr) {
     if (sizeStr.empty())
-        return 0;
+        throw std::runtime_error("ConfigParser: empty size");
 
-    std::string_view numberPart = sizeStr.substr(0, sizeStr.size() - 1);
+    std::string_view numberPart = sizeStr;
+    size_t multiplier = 1;
     char lastChar = sizeStr.back();
 
-    size_t multiplier = 1;
-    bool hasMultiplier = true;
-
     switch (lastChar) {
-        case 'K':
-        case 'k':
-            multiplier = 1024;
+        case 'K': case 'k': multiplier = 1024ULL;
+            numberPart = sizeStr.substr(0, sizeStr.size() - 1);
             break;
-        case 'M':
-        case 'm':
-            multiplier = 1024 * 1024;
+        case 'M': case 'm': multiplier = 1024ULL * 1024ULL;
+            numberPart = sizeStr.substr(0, sizeStr.size() - 1);
             break;
-        case 'G':
-        case 'g':
-            multiplier = 1024 * 1024 * 1024;
+        case 'G': case 'g': multiplier = 1024ULL * 1024ULL * 1024ULL;
+            numberPart = sizeStr.substr(0, sizeStr.size() - 1);
             break;
         default:
-            hasMultiplier = false;
-            numberPart = sizeStr;
             break;
     }
     size_t value = 0;
-
     auto result = std::from_chars(numberPart.data(), numberPart.data() + numberPart.size(), value);
 
-    if (result.ec != std::errc()) {
-        return 0;
-    }
+    if (result.ec != std::errc())
+        throw std::runtime_error(std::string("ConfigParser: invalid size format: '") + std::string(sizeStr) + "'");
+    if (multiplier > 1 && value > std::numeric_limits<size_t>::max() / multiplier)
+        throw std::runtime_error(std::string("ConfigParser: invalid size format: '") + std::string(sizeStr) + "'");
     return value * multiplier;
 }
