@@ -88,7 +88,7 @@ void ConfigParser::_parse() {
 
 ServerConfig ConfigParser::_parseServerBlock() {
     ServerConfig server;
-    _expectToken("{"); // ✅ was: _expectTocken — typo
+    _expectToken("{");
     while (_pos < _tokens.size() && _currentToken() != "}")
     {
         std::string directive = _consumeToken();
