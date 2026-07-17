@@ -238,7 +238,6 @@ size_t ConfigParser::_parseSize(const std::string_view sizeStr) {
     }
     size_t value = 0;
     auto result = std::from_chars(numberPart.data(), numberPart.data() + numberPart.size(), value);
-
     if (result.ec != std::errc())
         throw std::runtime_error(std::string("ConfigParser: invalid size format: '") + std::string(sizeStr) + "'");
     if (multiplier > 1 && value > std::numeric_limits<size_t>::max() / multiplier)

@@ -7,9 +7,11 @@ INCLUDES	= -I includes
 SRCS_DIR	= srcs
 OBJS_DIR	= objs
 
-SRCS		= $(SRCS_DIR)/parser-test-main.cpp \
+SRCS		= $(SRCS_DIR)/main.cpp \
 			  $(SRCS_DIR)/config/config.cpp \
-			  $(SRCS_DIR)/config/configParser.cpp
+			  $(SRCS_DIR)/config/configParser.cpp \
+			  $(SRCS_DIR)/client/client.cpp \
+			  $(SRCS_DIR)/server/server.cpp
 
 OBJS		= $(SRCS:$(SRCS_DIR)/%.cpp=$(OBJS_DIR)/%.o)
 
