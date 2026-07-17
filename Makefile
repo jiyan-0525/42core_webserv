@@ -10,6 +10,7 @@ OBJS_DIR	= objs
 SRCS		= $(SRCS_DIR)/main.cpp \
 			  $(SRCS_DIR)/config/config.cpp \
 			  $(SRCS_DIR)/config/configParser.cpp \
+			  $(SRCS_DIR)/http/httpRequest.cpp \
 
 OBJS		= $(SRCS:$(SRCS_DIR)/%.cpp=$(OBJS_DIR)/%.o)
 
