@@ -1,5 +1,6 @@
 #include "../../includes/server.hpp"
 #include "../../includes/client.hpp"
+#include "../../includes/httpRequest.hpp"
 #include <iostream>
 #include <stdexcept>
 #include <cstring>
@@ -136,6 +137,9 @@ void one_server(int port) {
                     else if (bytesRecv > 0)
                     {
                         buffer[bytesRecv] = '\0';      // Make it a C-string
+
+                        HttpRequest request;
+                        request.parseRequest(buffer);
 
                         std::cout << "===== HTTP REQUEST =====\n";
                         std::cout << buffer;

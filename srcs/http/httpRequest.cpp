@@ -22,6 +22,7 @@ void HttpRequest::parseRequest(const std::string& rawRequest) {
     }
 
     while (std::getline(requestStream, requestLine) && requestLine != "\r") {
+        std::cout << "Received request: Happy Parser" << std::endl;           //This line is just to show that the request is successufully arriving to the parser (Lucie)
         if (requestLine.empty() || requestLine == "\r") {
             break;
         }
