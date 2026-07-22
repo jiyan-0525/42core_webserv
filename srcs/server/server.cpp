@@ -10,6 +10,10 @@
 #include <vector>
 #include <poll.h>
 
+#include "httpResponse.hpp"
+#include "requestHandler.hpp"
+#include "config.hpp"
+
 #define MAX_CLIENTS 1024
 #define RECV_BUFFER_SIZE 1024
 
@@ -136,25 +140,58 @@ void one_server(int port) {
                     }
                     else if (bytesRecv > 0)
                     {
-                        buffer[bytesRecv] = '\0';      // Make it a C-string
-
-                        HttpRequest request;
-                        request.parseRequest(buffer);
-
+                        buffer[bytesRecv] = '\0';
+                    
                         std::cout << "===== HTTP REQUEST =====\n";
                         std::cout << buffer;
                         std::cout << "========================\n";
+                    
+                        // --- (real request, real config) ---
+                        HttpRequest request;
+                        request.parseRequest(buffer);              // A REAL request from the browser
+                    
+                        ServerConfig server;                       // TEMPORARILY hardcoded, until a real solution is found
+                        server.port = 8080;                        // config using ConfigParser (this will be connected 
+                        LocationConfig root;                       // by Person 1 later)
+                        root.path = "/";
+                        root.root = "www";
+                        root.index = "index.html";
+                        root.methods.push_back("GET");
+                        server.locations.push_back(root);
+                    
+                        HttpResponse response = RequestHandler::processRequest(request, server);
+                        std::string responseText = response.serialize();
+                    
+                        send(clients[i].fd, responseText.c_str(), responseText.size(), 0);
                     }
                     // 6. Send a proper HTTP response so Chrome can read it
                     // The browser needs the "HTTP/1.1 200 OK" header to know it's a valid webpage
-                    const char* httpResponse = 
-                    "HTTP/1.1 200 OK\r\n"
-                    "Content-Type: text/plain\r\n"
-                    "Content-Length: 5\r\n"
-                    "Connection: close\r\n"
-                    "\r\n"
-                    "HELLO";
-                    send(clients[i].fd, httpResponse, strlen(httpResponse), 0);
+                    // const char* httpResponse = 
+                    // "HTTP/1.1 200 OK\r\n"
+                    // "Content-Type: text/plain\r\n"
+                    // "Content-Length: 5\r\n"
+                    // "Connection: close\r\n"
+                    // "\r\n"
+                    // "HELLO";
+                    // send(clients[i].fd, httpResponse, strlen(httpResponse), 0);
+
+/*----------------------------*/
+//   ServerConfig server;
+//     server.port = 8080;
+//     std::string rawBuffer =
+//         "GET / HTTP/1.1\r\n"
+//         "Host: localhost:8080\r\n"
+//         "Connection: close\r\n"
+//         "\r\n";
+
+//                     HttpRequest request;
+//     request.parseRequest(rawBuffer);                       // парсимо сирі байти
+
+//     HttpResponse response = RequestHandler::processRequest(request, server); // ТВОЯ ЛОГІКА
+
+//     std::string responseText = response.serialize();
+/*----------------------------*/
+
                 }
             }
         //client_list.push_back(client_socket);
