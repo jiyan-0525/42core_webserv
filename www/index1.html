@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>42 Webserv - Creative Homepage</title>
+    <style>
+        /* 全局样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #e6e6e6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* 标题样式 */
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, #00dbde, #fc00ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 5px #00dbde, 0 0 10px #fc00ff;
+            }
+            to {
+                text-shadow: 0 0 10px #00dbde, 0 0 20px #fc00ff, 0 0 30px #fc00ff;
+            }
+        }
+
+        /* 子标题样式 */
+        p {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+
+        /* 按钮样式 */
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(45deg, #00dbde, #fc00ff);
+            color: #1a1a2e;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            margin: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 219, 222, 0.3);
+        }
+
+        /* 42 Logo 样式 */
+        .logo {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: #00dbde;
+            text-shadow: 0 0 10px rgba(0, 219, 222, 0.5);
+        }
+
+        /* 容器样式 */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 页脚样式 */
+        footer {
+            margin-top: 50px;
+            font-size: 0.9rem;
+            color: #a0a0a0;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            p {
+                font-size: 1rem;
+            }
+            .logo {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>42 Heilbronn</h1>
+        <p>
+            This is second homepage served by C++ web server!
+        </p>
+        <div>
+           <button class="btn" onclick="alert('Hello from 42 Heilbronn!')">Click Me</button>
+            <button class="btn" onclick="window.location.href='https://github.com/jiyan-0525/42core_webserv'">Visit the webserv</button>
+            <button class="btn" onclick="window.location.href='https://www.42heilbronn.de/en/'">Visit 42 Heilbronn</button>
+        </div>
+    </div>
+    <footer>
+        <p>Powered by <strong>42 Webserv</strong> | © 2026</p>
+    </footer>
+</body>
+</html>

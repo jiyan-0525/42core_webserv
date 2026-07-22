@@ -11,7 +11,7 @@ int main(int argc, char **argv) {
         configPath = argv[1];
     }
 
-    std::cout << "Parsing: " << configPath << "\n\n";
+    //std::cout << "Parsing: " << configPath << "\n\n";
     try {
         ConfigParser parser(configPath);
         const std::vector<ServerConfig>& servers = parser.getServers();
