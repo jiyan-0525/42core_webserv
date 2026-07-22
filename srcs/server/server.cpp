@@ -174,24 +174,6 @@ void one_server(int port) {
                     // "\r\n"
                     // "HELLO";
                     // send(clients[i].fd, httpResponse, strlen(httpResponse), 0);
-
-/*----------------------------*/
-//   ServerConfig server;
-//     server.port = 8080;
-//     std::string rawBuffer =
-//         "GET / HTTP/1.1\r\n"
-//         "Host: localhost:8080\r\n"
-//         "Connection: close\r\n"
-//         "\r\n";
-
-//                     HttpRequest request;
-//     request.parseRequest(rawBuffer);                       // парсимо сирі байти
-
-//     HttpResponse response = RequestHandler::processRequest(request, server); // ТВОЯ ЛОГІКА
-
-//     std::string responseText = response.serialize();
-/*----------------------------*/
-
                 }
             }
         //client_list.push_back(client_socket);
