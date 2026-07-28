@@ -10,6 +10,10 @@
 #include <map>
 #include <sys/epoll.h>
 
+#include "httpResponse.hpp"
+#include "requestHandler.hpp"
+#include "config.hpp"
+
 #define MAX_CLIENTS 1024
 #define RECV_BUFFER_SIZE 1024
 
@@ -169,32 +173,6 @@ void one_server(int port) {
                     close(client_fd); // Close socket
                     clients.erase(client_fd); // remove from my map container
                 }
-                     else if (bytesRecv > 0)
-                    {
-                        buffer[bytesRecv] = '\0';
-                    
-                        std::cout << "===== HTTP REQUEST =====\n";
-                        std::cout << buffer;
-                        std::cout << "========================\n";
-                    
-                        // --- (real request, real config) ---
-                        HttpRequest request;
-                        request.parseRequest(buffer);              // A REAL request from the browser
-                    
-                        ServerConfig server;                       // TEMPORARILY hardcoded, until a real solution is found
-                        server.port = 8080;                        // config using ConfigParser (this will be connected 
-                        LocationConfig root;                       // by Person 1 later)
-                        root.path = "/";
-                        root.root = "www";
-                        root.index = "index.html";
-                        root.methods.push_back("GET");
-                        server.locations.push_back(root);
-                    
-                        HttpResponse response = RequestHandler::processRequest(request, server);
-                        std::string responseText = response.serialize();
-                    
-                        send(clients[i].fd, responseText.c_str(), responseText.size(), 0);
-                    }
                 else if (bytesRecv > 0)
                 {
                     buffer[bytesRecv] = '\0';      // Make it a C-string
