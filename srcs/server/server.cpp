@@ -7,7 +7,7 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
-#include <vector>
+#include <map>
 #include <sys/epoll.h>
 
 #define MAX_CLIENTS 1024
@@ -67,11 +67,9 @@ void one_server(int port) {
 	sockaddr* adr = NULL;
 	socklen_t* adr_len = NULL;
 
-    std::vector<Client> clients;
-    size_t clients_count = 0;
+    std::map<int, Client> clients;
     int client_fd = 0;
     ssize_t bytesRecv = 0;
-    int ready = 0;
 
 
 
@@ -93,163 +91,143 @@ void one_server(int port) {
 
 
 
-    // int epfd = epoll_create1(0);
-    // if (epfd == -1)
-    //     exit(EXIT_FAILURE);
+    int epfd = epoll_create1(0); //
+    if (epfd == -1)
+        exit(EXIT_FAILURE);
 
-    // struct epoll_event ctl_event = {
-    //     .events = EPOLLIN | EPOLLOUT,
-    //     .data { .fd = server_fd}
-    // };
+    struct epoll_event server_event;
 
-    // int ret = epoll_ctl(epfd, EPOLL_CTL_ADD, server_fd, &ctl_event);
-    // if (ret == -1)
-    //     exit(EXIT_FAILURE);
+        server_event.events = EPOLLIN;
+        server_event.data.fd = server_fd;
+    //In this epoll server_event struct we specify the events we want to listen to
+
+    int ret = epoll_ctl(epfd, EPOLL_CTL_ADD, server_fd, &server_event); //epoll control -> add a file descriptor to the epoll
+    if (ret == -1)
+        exit(EXIT_FAILURE);
+
+    struct epoll_event events[100];
 
     while (1)
     {
-        // struct epoll_event event;
-        // int events_number = epoll_wait(epfd, &event, 2, 100); // it return the number of events that it has
-        // if (events_number == -1)
-        //     exit(EXIT_FAILURE);
-        // else if (events_number == 0)
-        //     continue;
-        
-        // if (event.data.fd == server_fd) // this means there was an event for the server / So we can accept new clients
-        // {
-        //     //--------------Is there a new client that want to connect?------------------
-        //         client_fd = accept(server_fd, adr, adr_len);
-        //         if (client_fd < 0)
-        //         {
-        //             perror("In accepting the new client");
-        //             exit(EXIT_FAILURE);
-        //         }
-        //         Client client(client_fd);
-        //         clients.push_back(client);
-        //         clients_count++;
-        // }
 
-        struct pollfd pollfds[MAX_CLIENTS + 1]; // +1 Listenning socket
-        pollfds[0].fd = server_fd;
-        pollfds[0].events = POLLIN; // which event do you want to listen to? POLLOUT to write
-        pollfds[0].revents = 0; //will become non 0, which event is available on this file descriptor
+        int events_number = epoll_wait(epfd, events, 100, 100);
 
-        for (size_t i = 0; i < clients_count; i++)
-        {
-            pollfds[i + 1].fd = clients[i].fd; //the first pollfds[0] is the listenning socket
-            pollfds[i + 1].events = POLLIN | POLLOUT; // which event do you want to listen to? POLLOUT to write
-            pollfds[i + 1].revents = 0; //will become non 0, which event is available on this file descriptor
-        }
-
-        //-----Is there a new client that wants to connect OR Is there an already connected client sending an HTTP request?--------
-        ready = poll(pollfds, clients_count + 1, 100);  // this function checks the activity of my listenning socket and all my already connected sockets
-        if (ready == -1)
-        {
-            perror("Error with a client"); // poll returns the fd number of the client
+        if (events_number == -1)
             exit(EXIT_FAILURE);
-            //NOT OKAY I NEED 
-            // errno == EAGAIN
-            // errno == EWOULDBLOCK
-            //To only handle the problematic client
-        }
-        else if (ready == 0)
-            continue; // timeout 100ms is reached, we can just continue
-        else // ready > 0, one or more fds have events
+        else if (events_number == 0)
+            continue;
+        
+        for (int i = 0; i < events_number; i++)
         {
-            //--------------Is there a new client that want to connect?------------------
-            if (pollfds[0].revents == POLLIN)
+            int fd = events[i].data.fd;
+
+            if (fd == server_fd)  //--------------Is there a new client that want to connect?------------------
             {
-                printf("\n+++++++ Waiting for new connection ++++++++\n\n");
                 client_fd = accept(server_fd, adr, adr_len);
                 if (client_fd < 0)
                 {
                     perror("In accepting the new client");
                     exit(EXIT_FAILURE);
                 }
-                Client client(client_fd);
-                clients.push_back(client);
-                clients_count++;
+
+                struct epoll_event client_event;
+                client_event.events = EPOLLIN;
+                client_event.data.fd = client_fd;
+
+                int add = epoll_ctl(epfd, EPOLL_CTL_ADD, client_fd, &client_event); //epoll control -> add a file descriptor to the epoll
+                if (add == -1)
+                    exit(EXIT_FAILURE);
+                clients.insert(std::make_pair(client_fd, Client(client_fd)));
             }
-            //-------------Is there an event from an already connected client?
-            for (size_t i = 0; i < clients_count; i++)
+            else  //-------------Is there an event from an already connected client?
             {
-                if (pollfds[i + 1].revents & POLLIN) //revents & POLLIN can accept a less strict condition -> for example revents = POLLIN | POLLHUP at the same time
-                {
-                    char buffer[RECV_BUFFER_SIZE];
-                    
-                    bytesRecv = recv(clients[i].fd, buffer, sizeof(buffer) - 1, 0);
-                    if (bytesRecv == -1)
-                    {
-                        perror("Reading from the client hereee");
-                        exit(EXIT_FAILURE);
-                    }
-                    else if (bytesRecv == 0) // the client closed the connection
-                    {
-                        printf("Removing client with fd: %d\n", clients[i].fd);
-                        close(clients[i].fd);
-                        clients.erase(clients.begin() + i);
-                        //clients_fd[i] = clients_fd[clients_count - 1]; // I need to also remove the client_fd from the list of fd that poll() needs to check
-                        clients_count--;
-                        i--;
-                    }
-                    else if (bytesRecv > 0)
-                    {
-                        buffer[bytesRecv] = '\0';      // Make it a C-string
-                        clients[i].buffer = buffer;
+                std::cout << "Event from an already connected client" << std::endl;
+                client_fd = fd;
 
-                        //I need to do my function isRequestComplete()
-                        // 2 cases It's either I get a GET request and I wont have any body
-                        //either I get everything else (like a post request) and the Content-Length will be specified
+                char buffer[RECV_BUFFER_SIZE];
                         
-                        // if (method == "GET")
-                        // {
-                        //     if (header_end != std::string::npos)     //if std::string::npos == true == "No position was found."
-                        //         request_complete = true;
-                        // }
-
-                        // else if (method == "POST")
-                        // {
-                        //     if (header_end != std::string::npos
-                        //         && body_size >= content_length)
-                        //         request_complete = true;
-                        // }
-                        if (isRequestComplete(clients[i].buffer))
-                        {
-                            try
-                            {
-                                clients[i].request.parseRequest(clients[i].buffer);
-                                std::cout << "===== HTTP REQUEST =====\n";
-                                std::cout << buffer;
-                                std::cout << "========================\n";
-
-                                // If we arrive here, parsing succeeded.
-                                // Now Person 3 can build the response.
-                                //clients[i].response.generateResponse(clients[i].request);
-                            }
-                            catch (const std::exception& e)
-                            {
-                                // Parsing failed.
-                                // Build a 400 Bad Request response.
-                            }
-                        }
-                        // HttpRequest request;
-                        // request.parseRequest(buffer);
-
-                        // std::cout << "===== HTTP REQUEST =====\n";
-                        // std::cout << buffer;
-                        // std::cout << "========================\n";
-                    }
-                    // 6. Send a proper HTTP response so Chrome can read it
-                    // The browser needs the "HTTP/1.1 200 OK" header to know it's a valid webpage
-                    const char* httpResponse = 
-                    "HTTP/1.1 200 OK\r\n"
-                    "Content-Type: text/plain\r\n"
-                    "Content-Length: 5\r\n"
-                    "Connection: close\r\n"
-                    "\r\n"
-                    "HELLO";
-                    send(clients[i].fd, httpResponse, strlen(httpResponse), 0);
+                bytesRecv = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+                if (bytesRecv == -1)
+                {
+                    perror("Reading from the client hereee");
+                    exit(EXIT_FAILURE);
                 }
+                else if (bytesRecv == 0) // the client closed the connection
+                {
+                    printf("Removing client with fd: %d\n", client_fd);
+                    int remove = epoll_ctl(epfd, EPOLL_CTL_DEL, client_fd, NULL); // remove from epoll
+                    if (remove == -1)
+                        exit(EXIT_FAILURE);
+                    close(client_fd); // Close socket
+                    clients.erase(client_fd); // remove from my map container
+                }
+                else if (bytesRecv > 0)
+                {
+                    buffer[bytesRecv] = '\0';      // Make it a C-string
+
+                    std::cout << "here" << std::endl;
+                    std::map<int, Client>::iterator it = clients.find(client_fd);
+                    if (it != clients.end())
+                    {
+                        std::cout << "filled the client struct with the HTTP request" << std::endl;
+                        it->second.buffer = buffer;
+                    }
+
+                    //I need to do my function isRequestComplete()
+                    // 2 cases It's either I get a GET request and I wont have any body
+                    //either I get everything else (like a post request) and the Content-Length will be specified
+                    
+                    // if (method == "GET")
+                    // {
+                    //     if (header_end != std::string::npos)     //if std::string::npos == true == "No position was found."
+                    //         request_complete = true;
+                    // }
+
+                    // else if (method == "POST")
+                    // {
+                    //     if (header_end != std::string::npos
+                    //         && body_size >= content_length)
+                    //         request_complete = true;
+                    // }
+                    //if (isRequestComplete(clients[i].buffer))
+                    //{
+                    try
+                    {
+                        //it->second.request.parseRequest(it->second.buffer);
+                        //clients[i].request.parseRequest(clients[i].buffer);
+                        std::cout << "===== HTTP REQUEST =====\n";
+                        std::cout << it->second.buffer;
+                        std::cout << "========================\n";
+
+                        // If we arrive here, parsing succeeded.
+                        // Now Person 3 can build the response.
+                        //clients[i].response.generateResponse(clients[i].request);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        std::cout << "Parsing failed" << std::endl;
+                        std::cout << "Build a 400 Bad Request response." << std::endl;
+                    }
+                //}
+                // HttpRequest request;
+                // request.parseRequest(buffer);
+
+                // std::cout << "===== HTTP REQUEST =====\n";
+                // std::cout << buffer;
+                // std::cout << "========================\n";
+                }
+            }
+            // 6. Send a proper HTTP response so Chrome can read it
+            // The browser needs the "HTTP/1.1 200 OK" header to know it's a valid webpage
+            const char* httpResponse = 
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/plain\r\n"
+            "Content-Length: 5\r\n"
+            "Connection: close\r\n"
+            "\r\n"
+            "HELLO";
+            send(client_fd, httpResponse, strlen(httpResponse), 0);
+        }
                 // // The client can almost always receive a response
                 // //So it is actually better to check if he can receive a response when the response is ready
                 // else if (pollfds[i + 1].revents & POLLOUT && answer_ready() == true)
@@ -266,12 +244,11 @@ void one_server(int port) {
                 //     "HELLO";
                 //     send(clients[i].fd, httpResponse, strlen(httpResponse), 0);
                 // }
-            }
+
         //client_list.push_back(client_socket);
-        }
-    }
 
     // std::vector<Client>::iterator it;
+    }
 
     // for (it = client_list.begin(); it != client_list.end(); it++)
     // {
