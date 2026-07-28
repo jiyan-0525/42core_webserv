@@ -13,6 +13,29 @@
 #define MAX_CLIENTS 1024
 #define RECV_BUFFER_SIZE 1024
 
+void server_cleanup(std::map<int, Client> clients, int epfd, int server_fd)
+{
+    // Remove clients from epoll and close sockets
+    for (std::map<int, Client>::iterator it = clients.begin();
+         it != clients.end();
+         ++it)
+    {
+        int fd = it->first;
+
+        epoll_ctl(epfd, EPOLL_CTL_DEL, fd, NULL);
+        close(fd);
+    }
+
+    clients.clear();
+
+    // Remove server socket
+    epoll_ctl(epfd, EPOLL_CTL_DEL, server_fd, NULL);
+    close(server_fd);
+
+    // Close epoll instance
+    close(epfd);
+}
+
 void one_server(int port) {
 
     std::string s_port = std::to_string(port);
@@ -71,26 +94,6 @@ void one_server(int port) {
     int client_fd = 0;
     ssize_t bytesRecv = 0;
 
-
-
-//YOUTUBE VIDEO
-//https://www.youtube.com/watch?v=w2kKgJY4vqY
-//EPOLL vs POLL
-
-
-//https://www.youtube.com/watch?v=wB9tIg209-8&t=303s
-//Non-blocking I/O and how Node uses it, in friendly terms: blocking vs async IO, CPU vs IO
-
-
-//MANUAL 
-//https://man7.org/linux/man-pages/man7/epoll.7.html
-//epoll(7) — Linux manual page
-
-
-
-
-
-
     int epfd = epoll_create1(0); //
     if (epfd == -1)
         exit(EXIT_FAILURE);
@@ -147,10 +150,15 @@ void one_server(int port) {
                 char buffer[RECV_BUFFER_SIZE];
                         
                 bytesRecv = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-                if (bytesRecv == -1)
+                if (bytesRecv == -1) //remove this client
                 {
-                    perror("Reading from the client hereee");
-                    exit(EXIT_FAILURE);
+                    perror("recv");
+                    
+                    epoll_ctl(epfd, EPOLL_CTL_DEL, client_fd, NULL);
+                    close(client_fd);
+                    clients.erase(client_fd);
+
+                    continue;
                 }
                 else if (bytesRecv == 0) // the client closed the connection
                 {
@@ -193,8 +201,7 @@ void one_server(int port) {
                     //{
                     try
                     {
-                        //it->second.request.parseRequest(it->second.buffer);
-                        //clients[i].request.parseRequest(clients[i].buffer);
+                        it->second.request.parseRequest(it->second.buffer);
                         std::cout << "===== HTTP REQUEST =====\n";
                         std::cout << it->second.buffer;
                         std::cout << "========================\n";
@@ -202,65 +209,55 @@ void one_server(int port) {
                         // If we arrive here, parsing succeeded.
                         // Now Person 3 can build the response.
                         //clients[i].response.generateResponse(clients[i].request);
+
+                        // 6. Send a proper HTTP response so Chrome can read it
+                        // The browser needs the "HTTP/1.1 200 OK" header to know it's a valid webpage
+                        // The client can almost always receive a response
+                        //So it is actually better to check if he can receive a response when the response is ready
+                        const char* httpResponse = 
+                        "HTTP/1.1 200 OK\r\n"
+                        "Content-Type: text/plain\r\n"
+                        "Content-Length: 5\r\n"
+                        "Connection: close\r\n"
+                        "\r\n"
+                        "HELLO";
+                        std::cout << httpResponse << std::endl;
+                        send(client_fd, httpResponse, strlen(httpResponse), 0);
+
+                        //I need to add a condition check
+                        //if ("Connection: close\r\n" == true)
+                        epoll_ctl(epfd, EPOLL_CTL_DEL, client_fd, NULL);
+                        close(client_fd);
+                        clients.erase(client_fd);
+
                     }
                     catch (const std::exception& e)
                     {
                         std::cout << "Parsing failed" << std::endl;
                         std::cout << "Build a 400 Bad Request response." << std::endl;
                     }
-                //}
-                // HttpRequest request;
-                // request.parseRequest(buffer);
-
-                // std::cout << "===== HTTP REQUEST =====\n";
-                // std::cout << buffer;
-                // std::cout << "========================\n";
                 }
             }
-            // 6. Send a proper HTTP response so Chrome can read it
-            // The browser needs the "HTTP/1.1 200 OK" header to know it's a valid webpage
-            const char* httpResponse = 
-            "HTTP/1.1 200 OK\r\n"
-            "Content-Type: text/plain\r\n"
-            "Content-Length: 5\r\n"
-            "Connection: close\r\n"
-            "\r\n"
-            "HELLO";
-            send(client_fd, httpResponse, strlen(httpResponse), 0);
         }
-                // // The client can almost always receive a response
-                // //So it is actually better to check if he can receive a response when the response is ready
-                // else if (pollfds[i + 1].revents & POLLOUT && answer_ready() == true)
-                // {
-                //     std::cout << "This client " << clients[i].fd << " can recerive data from the server / This socket is writable" << std::endl;
-                //     // 6. Send a proper HTTP response so Chrome can read it
-                //     // The browser needs the "HTTP/1.1 200 OK" header to know it's a valid webpage
-                //     const char* httpResponse = 
-                //     "HTTP/1.1 200 OK\r\n"
-                //     "Content-Type: text/plain\r\n"
-                //     "Content-Length: 5\r\n"
-                //     "Connection: close\r\n"
-                //     "\r\n"
-                //     "HELLO";
-                //     send(clients[i].fd, httpResponse, strlen(httpResponse), 0);
-                // }
-
-        //client_list.push_back(client_socket);
-
-    // std::vector<Client>::iterator it;
     }
-
-    // for (it = client_list.begin(); it != client_list.end(); it++)
-    // {
-    //     std::cout << it->fd << std::endl;
-    // }
-
     // 7. Clean up
-    //close(client_socket);
-    close(server_fd);
+    server_cleanup(clients, epfd, server_fd);
     return;
 }
 
+
+//YOUTUBE VIDEO
+//https://www.youtube.com/watch?v=w2kKgJY4vqY
+//EPOLL vs POLL
+
+
+//https://www.youtube.com/watch?v=wB9tIg209-8&t=303s
+//Non-blocking I/O and how Node uses it, in friendly terms: blocking vs async IO, CPU vs IO
+
+
+//MANUAL 
+//https://man7.org/linux/man-pages/man7/epoll.7.html
+//epoll(7) — Linux manual page
 
 //Non-blocking sockets
 //fcntl()
