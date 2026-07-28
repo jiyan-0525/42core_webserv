@@ -169,6 +169,32 @@ void one_server(int port) {
                     close(client_fd); // Close socket
                     clients.erase(client_fd); // remove from my map container
                 }
+                     else if (bytesRecv > 0)
+                    {
+                        buffer[bytesRecv] = '\0';
+                    
+                        std::cout << "===== HTTP REQUEST =====\n";
+                        std::cout << buffer;
+                        std::cout << "========================\n";
+                    
+                        // --- (real request, real config) ---
+                        HttpRequest request;
+                        request.parseRequest(buffer);              // A REAL request from the browser
+                    
+                        ServerConfig server;                       // TEMPORARILY hardcoded, until a real solution is found
+                        server.port = 8080;                        // config using ConfigParser (this will be connected 
+                        LocationConfig root;                       // by Person 1 later)
+                        root.path = "/";
+                        root.root = "www";
+                        root.index = "index.html";
+                        root.methods.push_back("GET");
+                        server.locations.push_back(root);
+                    
+                        HttpResponse response = RequestHandler::processRequest(request, server);
+                        std::string responseText = response.serialize();
+                    
+                        send(clients[i].fd, responseText.c_str(), responseText.size(), 0);
+                    }
                 else if (bytesRecv > 0)
                 {
                     buffer[bytesRecv] = '\0';      // Make it a C-string
@@ -210,19 +236,30 @@ void one_server(int port) {
                         // Now Person 3 can build the response.
                         //clients[i].response.generateResponse(clients[i].request);
 
+                        // --- (real request, real config) ---
+                        HttpRequest request;
+                        request.parseRequest(buffer);              // A REAL request from the browser
+                    
+                        ServerConfig server;                       // TEMPORARILY hardcoded, until a real solution is found
+                        server.port = 8080;                        // config using ConfigParser (this will be connected 
+                        LocationConfig root;                       // by Person 1 later)
+                        root.path = "/";
+                        root.root = "www";
+                        root.index = "index.html";
+                        root.methods.push_back("GET");
+                        server.locations.push_back(root);
+
+                        
                         // 6. Send a proper HTTP response so Chrome can read it
                         // The browser needs the "HTTP/1.1 200 OK" header to know it's a valid webpage
                         // The client can almost always receive a response
                         //So it is actually better to check if he can receive a response when the response is ready
-                        const char* httpResponse = 
-                        "HTTP/1.1 200 OK\r\n"
-                        "Content-Type: text/plain\r\n"
-                        "Content-Length: 5\r\n"
-                        "Connection: close\r\n"
-                        "\r\n"
-                        "HELLO";
-                        std::cout << httpResponse << std::endl;
-                        send(client_fd, httpResponse, strlen(httpResponse), 0);
+                    
+                        HttpResponse response = RequestHandler::processRequest(request, server);
+                        std::string responseText = response.serialize();
+                    
+                        std::cout << responseText << std::endl;
+                        send(client_fd, responseText.c_str(), responseText.size(), 0);
 
                         //I need to add a condition check
                         //if ("Connection: close\r\n" == true)
