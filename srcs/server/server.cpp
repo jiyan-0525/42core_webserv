@@ -17,7 +17,7 @@
 #define MAX_CLIENTS 1024
 #define RECV_BUFFER_SIZE 1024
 
-void server_cleanup(std::map<int, Client> clients, int epfd, int server_fd)
+void server_cleanup(std::map<int, Client>& clients, int epfd, int server_fd)
 {
     // Remove clients from epoll and close sockets
     for (std::map<int, Client>::iterator it = clients.begin();
@@ -91,8 +91,8 @@ void one_server(int port) {
     std::cout << "Server is running... Open Chrome and go to http://localhost:8080\n";
 
     // 5. Accept Chrome's connection
-	sockaddr* adr = NULL;
-	socklen_t* adr_len = NULL;
+    sockaddr_in client_addr;
+    socklen_t client_len = sizeof(client_addr);
 
     std::map<int, Client> clients;
     int client_fd = 0;
@@ -130,7 +130,7 @@ void one_server(int port) {
 
             if (fd == server_fd)  //--------------Is there a new client that want to connect?------------------
             {
-                client_fd = accept(server_fd, adr, adr_len);
+                client_fd = accept(server_fd, (sockaddr*)&client_addr, &client_len);
                 if (client_fd < 0)
                 {
                     perror("In accepting the new client");
