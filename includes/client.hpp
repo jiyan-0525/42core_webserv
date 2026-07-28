@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <poll.h>
+#include "httpRequest.hpp"
 
 class Socket
 {
@@ -54,6 +55,10 @@ struct Client
 	int fd;
 	std::string buffer;
 	bool request_complete;
+	
+	HttpRequest request;
+	//HttpResponse response; //TO DO
+
 	bool keep_alive;
 	
 	Client(int socket_fd)

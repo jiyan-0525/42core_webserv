@@ -8,7 +8,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <vector>
-#include <poll.h>
+#include <sys/epoll.h>
 
 #define MAX_CLIENTS 1024
 #define RECV_BUFFER_SIZE 1024
@@ -56,7 +56,7 @@ void one_server(int port) {
     // 4. Start listening for incoming connections (like Chrome)
     //int listen(int socket, int backlog);
     //The second parameter, backlog, defines the maximum number of pending connections that can be queued up before connections are refused.
-    if (listen(server_fd, 3) < 0)
+    if (listen(server_fd, SOMAXCONN) < 0) // SOMAXCONN maximum that the Kernel can do 
     {
         perror("In listen");
         exit(EXIT_FAILURE);
@@ -73,8 +73,62 @@ void one_server(int port) {
     ssize_t bytesRecv = 0;
     int ready = 0;
 
+
+
+//YOUTUBE VIDEO
+//https://www.youtube.com/watch?v=w2kKgJY4vqY
+//EPOLL vs POLL
+
+
+//https://www.youtube.com/watch?v=wB9tIg209-8&t=303s
+//Non-blocking I/O and how Node uses it, in friendly terms: blocking vs async IO, CPU vs IO
+
+
+//MANUAL 
+//https://man7.org/linux/man-pages/man7/epoll.7.html
+//epoll(7) — Linux manual page
+
+
+
+
+
+
+    // int epfd = epoll_create1(0);
+    // if (epfd == -1)
+    //     exit(EXIT_FAILURE);
+
+    // struct epoll_event ctl_event = {
+    //     .events = EPOLLIN | EPOLLOUT,
+    //     .data { .fd = server_fd}
+    // };
+
+    // int ret = epoll_ctl(epfd, EPOLL_CTL_ADD, server_fd, &ctl_event);
+    // if (ret == -1)
+    //     exit(EXIT_FAILURE);
+
     while (1)
     {
+        // struct epoll_event event;
+        // int events_number = epoll_wait(epfd, &event, 2, 100); // it return the number of events that it has
+        // if (events_number == -1)
+        //     exit(EXIT_FAILURE);
+        // else if (events_number == 0)
+        //     continue;
+        
+        // if (event.data.fd == server_fd) // this means there was an event for the server / So we can accept new clients
+        // {
+        //     //--------------Is there a new client that want to connect?------------------
+        //         client_fd = accept(server_fd, adr, adr_len);
+        //         if (client_fd < 0)
+        //         {
+        //             perror("In accepting the new client");
+        //             exit(EXIT_FAILURE);
+        //         }
+        //         Client client(client_fd);
+        //         clients.push_back(client);
+        //         clients_count++;
+        // }
+
         struct pollfd pollfds[MAX_CLIENTS + 1]; // +1 Listenning socket
         pollfds[0].fd = server_fd;
         pollfds[0].events = POLLIN; // which event do you want to listen to? POLLOUT to write
@@ -83,7 +137,7 @@ void one_server(int port) {
         for (size_t i = 0; i < clients_count; i++)
         {
             pollfds[i + 1].fd = clients[i].fd; //the first pollfds[0] is the listenning socket
-            pollfds[i + 1].events = POLLIN; // which event do you want to listen to? POLLOUT to write
+            pollfds[i + 1].events = POLLIN | POLLOUT; // which event do you want to listen to? POLLOUT to write
             pollfds[i + 1].revents = 0; //will become non 0, which event is available on this file descriptor
         }
 
@@ -93,6 +147,10 @@ void one_server(int port) {
         {
             perror("Error with a client"); // poll returns the fd number of the client
             exit(EXIT_FAILURE);
+            //NOT OKAY I NEED 
+            // errno == EAGAIN
+            // errno == EWOULDBLOCK
+            //To only handle the problematic client
         }
         else if (ready == 0)
             continue; // timeout 100ms is reached, we can just continue
@@ -137,13 +195,49 @@ void one_server(int port) {
                     else if (bytesRecv > 0)
                     {
                         buffer[bytesRecv] = '\0';      // Make it a C-string
+                        clients[i].buffer = buffer;
 
-                        HttpRequest request;
-                        request.parseRequest(buffer);
+                        //I need to do my function isRequestComplete()
+                        // 2 cases It's either I get a GET request and I wont have any body
+                        //either I get everything else (like a post request) and the Content-Length will be specified
+                        
+                        // if (method == "GET")
+                        // {
+                        //     if (header_end != std::string::npos)     //if std::string::npos == true == "No position was found."
+                        //         request_complete = true;
+                        // }
 
-                        std::cout << "===== HTTP REQUEST =====\n";
-                        std::cout << buffer;
-                        std::cout << "========================\n";
+                        // else if (method == "POST")
+                        // {
+                        //     if (header_end != std::string::npos
+                        //         && body_size >= content_length)
+                        //         request_complete = true;
+                        // }
+                        if (isRequestComplete(clients[i].buffer))
+                        {
+                            try
+                            {
+                                clients[i].request.parseRequest(clients[i].buffer);
+                                std::cout << "===== HTTP REQUEST =====\n";
+                                std::cout << buffer;
+                                std::cout << "========================\n";
+
+                                // If we arrive here, parsing succeeded.
+                                // Now Person 3 can build the response.
+                                //clients[i].response.generateResponse(clients[i].request);
+                            }
+                            catch (const std::exception& e)
+                            {
+                                // Parsing failed.
+                                // Build a 400 Bad Request response.
+                            }
+                        }
+                        // HttpRequest request;
+                        // request.parseRequest(buffer);
+
+                        // std::cout << "===== HTTP REQUEST =====\n";
+                        // std::cout << buffer;
+                        // std::cout << "========================\n";
                     }
                     // 6. Send a proper HTTP response so Chrome can read it
                     // The browser needs the "HTTP/1.1 200 OK" header to know it's a valid webpage
@@ -156,6 +250,22 @@ void one_server(int port) {
                     "HELLO";
                     send(clients[i].fd, httpResponse, strlen(httpResponse), 0);
                 }
+                // // The client can almost always receive a response
+                // //So it is actually better to check if he can receive a response when the response is ready
+                // else if (pollfds[i + 1].revents & POLLOUT && answer_ready() == true)
+                // {
+                //     std::cout << "This client " << clients[i].fd << " can recerive data from the server / This socket is writable" << std::endl;
+                //     // 6. Send a proper HTTP response so Chrome can read it
+                //     // The browser needs the "HTTP/1.1 200 OK" header to know it's a valid webpage
+                //     const char* httpResponse = 
+                //     "HTTP/1.1 200 OK\r\n"
+                //     "Content-Type: text/plain\r\n"
+                //     "Content-Length: 5\r\n"
+                //     "Connection: close\r\n"
+                //     "\r\n"
+                //     "HELLO";
+                //     send(clients[i].fd, httpResponse, strlen(httpResponse), 0);
+                // }
             }
         //client_list.push_back(client_socket);
         }
@@ -173,3 +283,41 @@ void one_server(int port) {
     close(server_fd);
     return;
 }
+
+
+//Non-blocking sockets
+//fcntl()
+//fcntl(fd, F_SETFL, O_NONBLOCK);
+
+//Error reporting
+//errno
+//strerror()
+//std::cerr << strerror(errno) << std::endl;
+
+
+//Your program must not crash under any circumstances (even if it 
+//runs out of memory) or terminate unexpectedly.
+
+// That means your server should survive situations like:
+
+// a client disconnects unexpectedly
+// a client sends malformed data
+// a client closes the connection while you're writing
+// accept() fails
+// recv() fails
+// send() fails
+// poll() returns an error
+
+// The important word is:
+// Handle errors gracefully.
+
+
+//Never do a read or a write without going through poll().
+//You're not checking whether the socket is writable.
+//I will need to watch POLLIN and POLLOUT
+
+
+
+
+
+
