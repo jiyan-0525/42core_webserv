@@ -260,6 +260,16 @@ void one_server(int port) {
     return;
 }
 
+//NEXT STEPS
+
+//Make sockets non-blocking
+// #include <fcntl.h>
+// fcntl(server_fd, F_SETFL, O_NONBLOCK);
+
+//I close too early
+//if ("Connection: close\r\n" == false)
+//The connection with my client needs to be kept alive
+
 
 //YOUTUBE VIDEO
 //https://www.youtube.com/watch?v=w2kKgJY4vqY
