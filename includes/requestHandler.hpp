@@ -15,8 +15,10 @@ class RequestHandler {
     private:
         static const LocationConfig* matchLocation(const ServerConfig& server, const std::string& url);// Finds the best matching location for a requested URL
         static HttpResponse handleGet(const HttpRequest& req, const LocationConfig& loc, const ServerConfig& server);// Handles HTTP GET requests
-        static HttpResponse buildError(int code, const ServerConfig& server);// Builds an HTTP error response
-        static std::string guessMimeType(const std::string& path);
+		static HttpResponse handlePost(const HttpRequest& req, const LocationConfig& loc, const ServerConfig& server);
+		static HttpResponse handleDelete(const HttpRequest& req, const LocationConfig& loc, const ServerConfig& server);
+		static HttpResponse buildError(int code, const ServerConfig& server);// Builds an HTTP error response
+		static std::string guessMimeType(const std::string& path);
 };
 
 #endif

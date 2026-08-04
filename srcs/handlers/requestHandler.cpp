@@ -2,23 +2,35 @@
 #include <sys/stat.h>
 #include <fstream>
 #include <sstream>
+#include <algorithm>
+#include <cstdio>
+#include <sys/stat.h>
+
+// ---------- Helper function to check if a URL matches a location path ----------
+static bool isPrefixMatch(const std::string& url, const std::string& locPath)
+{
+    if (url.compare(0, locPath.size(), locPath) != 0)
+        return false;
+    if (url.size() == locPath.size())
+        return true;
+    if (locPath.back() == '/')
+        return true;
+    return url[locPath.size()] == '/';
+}
 
 // ---------- Routing: Find the right location based on the URL ----------
 const LocationConfig* RequestHandler::matchLocation(const ServerConfig& server,
                                                       const std::string& url)
 {
-    const LocationConfig* best = nullptr;
-    size_t bestLen = 0;
+    const LocationConfig*	best = nullptr;
+    size_t					bestLen = 0;
 
     for (const auto& loc : server.locations)
     {
-        if (url.compare(0, loc.path.size(), loc.path) == 0)
+        if (isPrefixMatch(url, loc.path) && loc.path.size() > bestLen)
         {
-            if (loc.path.size() > bestLen)
-            {
                 best = &loc;
                 bestLen = loc.path.size();
-            }
         }
     }
     return best;
@@ -89,6 +101,55 @@ HttpResponse RequestHandler::handleGet(const HttpRequest& req, const LocationCon
     return response;
 }
 
+// ---------- POST: save uploaded file ----------
+HttpResponse RequestHandler::handlePost(const HttpRequest& req, const LocationConfig& loc, const ServerConfig& server)
+{
+    if (loc.upload_dir.empty())
+        return buildError(403, server);
+
+    // simple naive filename: use a header or generate one
+    std::string filename = "upload_" + std::to_string(rand()) + ".bin";
+    if (req.hasHeader("X-Filename")) // optional custom header approach
+        filename = req.getHeader("X-Filename");
+
+    std::string fullPath = loc.upload_dir + "/" + filename;
+
+    std::ofstream outFile(fullPath, std::ios::binary);
+    if (!outFile.is_open())
+        return buildError(500, server);
+
+    outFile.write(req.getBody().c_str(), req.getBody().size());
+    outFile.close();
+
+    HttpResponse response;
+    response.setStatus(201, "Created");
+    response.setHeader("Content-Type", "text/html");
+    response.setBody("<html><body><h1>201 Created</h1><p>File uploaded: " + filename + "</p></body></html>");
+    return response;
+}
+
+
+// ---------- DELETE: remove a file ----------
+HttpResponse RequestHandler::handleDelete(const HttpRequest& req, const LocationConfig& loc, const ServerConfig& server)
+{
+    std::string relativePart = req.getPath().substr(loc.path.size());
+    std::string fullPath = loc.root + relativePart;
+
+    struct stat pathStat;
+    if (stat(fullPath.c_str(), &pathStat) != 0)
+        return buildError(404, server);
+
+    if (S_ISDIR(pathStat.st_mode))
+        return buildError(403, server); // не видаляємо директорії напряму
+
+    if (remove(fullPath.c_str()) != 0)
+        return buildError(500, server);
+
+    HttpResponse response;
+    response.setStatus(204, "No Content");
+    return response;
+}
+
 // ---------- MAIN ENTRY POINT, which will be called by Server.cpp ----------
 HttpResponse RequestHandler::processRequest(const HttpRequest& req, const ServerConfig& server)
 {
@@ -96,9 +157,16 @@ HttpResponse RequestHandler::processRequest(const HttpRequest& req, const Server
     if (loc == nullptr)
         return buildError(404, server);
 
-    if (req.getMethod() == "GET")
-        return handleGet(req, *loc, server);
+    const std::string& method = req.getMethod();
+    if (std::find(loc->methods.begin(), loc->methods.end(), method) == loc->methods.end())
+        return buildError(405, server);
 
-    // POST/DELETE/CGI will include here later
+    if (method == "GET")
+        return handleGet(req, *loc, server);
+    if (method == "POST")
+        return handlePost(req, *loc, server);
+    if (method == "DELETE")
+        return handleDelete(req, *loc, server);
+
     return buildError(501, server);
 }
