@@ -70,6 +70,6 @@ struct Client
 	}
 };
 
-void one_server(int port);
+void one_server(const std::vector<ServerConfig>& servers);
 
 #endif

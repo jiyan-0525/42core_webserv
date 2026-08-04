@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <map>
 #include <sys/epoll.h>
+#include <fcntl.h>
 
 #include "httpResponse.hpp"
 #include "requestHandler.hpp"
@@ -40,7 +41,7 @@ void server_cleanup(std::map<int, Client>& clients, int epfd, int server_fd)
     close(epfd);
 }
 
-void one_server(int port) {
+void one_server(const std::vector<ServerConfig>& servers) {
 
     std::string s_port = std::to_string(port);
 
@@ -51,6 +52,8 @@ void one_server(int port) {
         perror("In socket");
         exit(EXIT_FAILURE);
     }
+
+    fcntl(server_fd, F_SETFL, O_NONBLOCK);
 
     // Allow immediate reuse of the port (prevents "Address already in use" errors)
     int opt = 1;
@@ -136,6 +139,7 @@ void one_server(int port) {
                     perror("In accepting the new client");
                     exit(EXIT_FAILURE);
                 }
+                fcntl(client_fd, F_SETFL, O_NONBLOCK);
 
                 struct epoll_event client_event;
                 client_event.events = EPOLLIN;
@@ -167,9 +171,7 @@ void one_server(int port) {
                 else if (bytesRecv == 0) // the client closed the connection
                 {
                     printf("Removing client with fd: %d\n", client_fd);
-                    int remove = epoll_ctl(epfd, EPOLL_CTL_DEL, client_fd, NULL); // remove from epoll
-                    if (remove == -1)
-                        exit(EXIT_FAILURE);
+                    epoll_ctl(epfd, EPOLL_CTL_DEL, client_fd, NULL); // remove from epoll
                     close(client_fd); // Close socket
                     clients.erase(client_fd); // remove from my map container
                 }
@@ -198,7 +200,7 @@ void one_server(int port) {
                     // else if (method == "POST")
                     // {
                     //     if (header_end != std::string::npos
-                    //         && body_size >= content_length)
+                    //         && body_size == content_length)
                     //         request_complete = true;
                     // }
                     //if (isRequestComplete(clients[i].buffer))
@@ -315,8 +317,22 @@ void one_server(int port) {
 //You're not checking whether the socket is writable.
 //I will need to watch POLLIN and POLLOUT
 
+// try
+// {
+//     /* code */
+// }
+// catch(const std::exception& e)
+// {
+//     std::cerr << e.what() << '\n';
+// }
 
-
+// Some-Header: value\r\n
+// Some-Header: value\r\n
+// Body-Size: 134\r\n
+// \r\n
+// {
+// }
+// 
 
 
 
