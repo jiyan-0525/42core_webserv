@@ -128,7 +128,6 @@ HttpResponse RequestHandler::handlePost(const HttpRequest& req, const LocationCo
     return response;
 }
 
-
 // ---------- DELETE: remove a file ----------
 HttpResponse RequestHandler::handleDelete(const HttpRequest& req, const LocationConfig& loc, const ServerConfig& server)
 {
@@ -140,7 +139,7 @@ HttpResponse RequestHandler::handleDelete(const HttpRequest& req, const Location
         return buildError(404, server);
 
     if (S_ISDIR(pathStat.st_mode))
-        return buildError(403, server); // не видаляємо директорії напряму
+        return buildError(403, server);
 
     if (remove(fullPath.c_str()) != 0)
         return buildError(500, server);
