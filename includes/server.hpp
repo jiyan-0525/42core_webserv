@@ -7,10 +7,16 @@
 #include <poll.h>
 #include "httpRequest.hpp"
 #include "client.hpp"
+#include "config.hpp"
+#include "configParser.hpp"
+#include "server.hpp"
+#include <sys/epoll.h>
 
-class server {
+void webserver(const std::vector<ServerConfig>& servers);
 
-	private:
+class Server {
+
+	public:
 	std::vector<int> listeningSockets;
 	std::map<int, Client> clients;
 
@@ -20,23 +26,22 @@ class server {
 	void createListeningSocket(int port); // the function itself will do listeningSockets.push_back(fd);
 	void initializeEpoll(void);
 
-	public:
-	server(const std::vector<ServerConfig>& servers); //Initializer
+	Server(const std::vector<ServerConfig>& servers); //Initializer
 
-	bool isListeningSocket(int fd);
+	// bool isListeningSocket(int fd);
 
-	void acceptNewClient(int listening_fd);
-	void addnewClient(int fd);
-	void removeClient(int fd);
+	// void acceptNewClient(int listening_fd);
+	// void addnewClient(int fd);
+	// void removeClient(int fd);
 
-	void eventLoop(void);
+	// void eventLoop(void);
 
-	void handleClientEvent(int fd);
-	void receiveData(int fd);
-	bool requestComplete(int fd);
-	void processRequest(int fd);
+	// void handleClientEvent(int fd);
+	// void receiveData(int fd);
+	// bool requestComplete(int fd);
+	// void processRequest(int fd);
 
-	void server_cleanup(void);
+	// void server_cleanup(void);
 
 };
 

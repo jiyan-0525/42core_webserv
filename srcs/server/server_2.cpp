@@ -16,7 +16,7 @@
 #include "config.hpp"
 
 
-server::server(const std::vector<ServerConfig>& servers)
+Server::Server(const std::vector<ServerConfig>& servers)
 {
     for (size_t i = 0; i < servers.size(); i++)
     {
@@ -25,7 +25,7 @@ server::server(const std::vector<ServerConfig>& servers)
 	initializeEpoll();
 }
 
-void server::createListeningSocket(int port) //the function itself will do listeningSockets.push_back(fd);
+void Server::createListeningSocket(int port) //the function itself will do listeningSockets.push_back(fd);
 {
 	std::string s_port = std::to_string(port);
 
@@ -76,13 +76,15 @@ void server::createListeningSocket(int port) //the function itself will do liste
         perror("In listen");
         exit(EXIT_FAILURE);
     }
-    std::cout << "Server is running... Open Chrome and go to http://localhost:8080\n";
+    std::cout << "Server is running... Open Chrome and go to http://localhost:" << s_port << std::endl;
 
 	listeningSockets.push_back(server_fd);
 }
 
-void server::initializeEpoll(void)
+void Server::initializeEpoll(void)
 {
+    this->epfd = epoll_create1(0);
+
     for (size_t i = 0; i < listeningSockets.size(); i++)
     {
         struct epoll_event server_event = {};
@@ -90,6 +92,6 @@ void server::initializeEpoll(void)
         server_event.events = EPOLLIN;
         server_event.data.fd = listeningSockets[i];
 
-        epoll_ctl(epfd, EPOLL_CTL_ADD, listeningSockets[i], &server_event);
+        epoll_ctl(this->epfd, EPOLL_CTL_ADD, listeningSockets[i], &server_event);
     }
 }

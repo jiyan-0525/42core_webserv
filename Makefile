@@ -13,6 +13,7 @@ SRCS		= $(SRCS_DIR)/main.cpp \
 			  $(SRCS_DIR)/http/httpRequest.cpp \
 			  $(SRCS_DIR)/http/httpResponse.cpp \
 			  $(SRCS_DIR)/server/server.cpp\
+			  $(SRCS_DIR)/server/server_2.cpp\
 			  $(SRCS_DIR)/handlers/requestHandler.cpp\
 
 OBJS		= $(SRCS:$(SRCS_DIR)/%.cpp=$(OBJS_DIR)/%.o)

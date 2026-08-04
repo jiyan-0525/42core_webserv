@@ -1,6 +1,9 @@
 #include "../../includes/server.hpp"
 #include "../../includes/client.hpp"
 #include "../../includes/httpRequest.hpp"
+#include "../../includes/httpResponse.hpp"
+#include "../../includes/requestHandler.hpp"
+#include "../../includes/config.hpp"
 #include <iostream>
 #include <stdexcept>
 #include <cstring>
@@ -10,10 +13,6 @@
 #include <map>
 #include <sys/epoll.h>
 #include <fcntl.h>
-
-#include "httpResponse.hpp"
-#include "requestHandler.hpp"
-#include "config.hpp"
 
 #define MAX_CLIENTS 1024
 #define RECV_BUFFER_SIZE 1024
@@ -41,57 +40,9 @@ void server_cleanup(std::map<int, Client>& clients, int epfd, int server_fd)
     close(epfd);
 }
 
-void one_server(const std::vector<ServerConfig>& servers) {
+void webserver(const std::vector<ServerConfig>& servers) {
 
-    std::string s_port = std::to_string(port);
-
-    int server_fd;
-
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
-    {
-        perror("In socket");
-        exit(EXIT_FAILURE);
-    }
-
-    fcntl(server_fd, F_SETFL, O_NONBLOCK);
-
-    // Allow immediate reuse of the port (prevents "Address already in use" errors)
-    int opt = 1;
-    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-
-    struct addrinfo request_form;
-    struct addrinfo* result;
-    
-    std::memset(&request_form, 0, sizeof(request_form)); // Zero out memory old-school style
-    request_form.ai_family = AF_INET;             // IPv4
-    request_form.ai_socktype = SOCK_STREAM;       // TCP
-    request_form.ai_flags = AI_PASSIVE;           // Bind to all available interfaces (0.0.0.0)
-
-    char *ptr = NULL;
-
-    if (getaddrinfo(ptr, s_port.c_str(), &request_form, &result) != 0) {
-        std::cerr << "getaddrinfo failed\n";
-        close(server_fd);
-        return;
-    }
-
-    // 3. Bind the socket to the port
-    if (bind(server_fd, result->ai_addr, result->ai_addrlen) < 0)
-    {
-        perror("In bind");
-        exit(EXIT_FAILURE);
-    }
-    freeaddrinfo(result);
-
-    // 4. Start listening for incoming connections (like Chrome)
-    //int listen(int socket, int backlog);
-    //The second parameter, backlog, defines the maximum number of pending connections that can be queued up before connections are refused.
-    if (listen(server_fd, SOMAXCONN) < 0) // SOMAXCONN maximum that the Kernel can do 
-    {
-        perror("In listen");
-        exit(EXIT_FAILURE);
-    }
-    std::cout << "Server is running... Open Chrome and go to http://localhost:8080\n";
+    Server webserver(servers);
 
     // 5. Accept Chrome's connection
     sockaddr_in client_addr;
@@ -101,26 +52,12 @@ void one_server(const std::vector<ServerConfig>& servers) {
     int client_fd = 0;
     ssize_t bytesRecv = 0;
 
-    int epfd = epoll_create1(0); //
-    if (epfd == -1)
-        exit(EXIT_FAILURE);
-
-    struct epoll_event server_event;
-
-        server_event.events = EPOLLIN;
-        server_event.data.fd = server_fd;
-    //In this epoll server_event struct we specify the events we want to listen to
-
-    int ret = epoll_ctl(epfd, EPOLL_CTL_ADD, server_fd, &server_event); //epoll control -> add a file descriptor to the epoll
-    if (ret == -1)
-        exit(EXIT_FAILURE);
-
     struct epoll_event events[100];
 
     while (1)
     {
 
-        int events_number = epoll_wait(epfd, events, 100, 100);
+        int events_number = epoll_wait(webserver.epfd, events, 100, 100);
 
         if (events_number == -1)
             exit(EXIT_FAILURE);
@@ -131,9 +68,9 @@ void one_server(const std::vector<ServerConfig>& servers) {
         {
             int fd = events[i].data.fd;
 
-            if (fd == server_fd)  //--------------Is there a new client that want to connect?------------------
+            if (fd == webserver.listeningSockets[0])  //--------------Is there a new client that want to connect?------------------
             {
-                client_fd = accept(server_fd, (sockaddr*)&client_addr, &client_len);
+                client_fd = accept(webserver.listeningSockets[0], (sockaddr*)&client_addr, &client_len);
                 if (client_fd < 0)
                 {
                     perror("In accepting the new client");
@@ -145,7 +82,7 @@ void one_server(const std::vector<ServerConfig>& servers) {
                 client_event.events = EPOLLIN;
                 client_event.data.fd = client_fd;
 
-                int add = epoll_ctl(epfd, EPOLL_CTL_ADD, client_fd, &client_event); //epoll control -> add a file descriptor to the epoll
+                int add = epoll_ctl(webserver.epfd, EPOLL_CTL_ADD, client_fd, &client_event); //epoll control -> add a file descriptor to the epoll
                 if (add == -1)
                     exit(EXIT_FAILURE);
                 clients.insert(std::make_pair(client_fd, Client(client_fd)));
@@ -162,7 +99,7 @@ void one_server(const std::vector<ServerConfig>& servers) {
                 {
                     perror("recv");
                     
-                    epoll_ctl(epfd, EPOLL_CTL_DEL, client_fd, NULL);
+                    epoll_ctl(webserver.epfd, EPOLL_CTL_DEL, client_fd, NULL);
                     close(client_fd);
                     clients.erase(client_fd);
 
@@ -171,7 +108,7 @@ void one_server(const std::vector<ServerConfig>& servers) {
                 else if (bytesRecv == 0) // the client closed the connection
                 {
                     printf("Removing client with fd: %d\n", client_fd);
-                    epoll_ctl(epfd, EPOLL_CTL_DEL, client_fd, NULL); // remove from epoll
+                    epoll_ctl(webserver.epfd, EPOLL_CTL_DEL, client_fd, NULL); // remove from epoll
                     close(client_fd); // Close socket
                     clients.erase(client_fd); // remove from my map container
                 }
@@ -243,7 +180,7 @@ void one_server(const std::vector<ServerConfig>& servers) {
 
                         //I need to add a condition check
                         //if ("Connection: close\r\n" == true)
-                        epoll_ctl(epfd, EPOLL_CTL_DEL, client_fd, NULL);
+                        epoll_ctl(webserver.epfd, EPOLL_CTL_DEL, client_fd, NULL);
                         close(client_fd);
                         clients.erase(client_fd);
 
@@ -258,7 +195,7 @@ void one_server(const std::vector<ServerConfig>& servers) {
         }
     }
     // 7. Clean up
-    server_cleanup(clients, epfd, server_fd);
+    server_cleanup(clients, webserver.epfd, webserver.listeningSockets[0]);
     return;
 }
 
