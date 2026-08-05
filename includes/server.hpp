@@ -12,6 +12,8 @@
 #include "server.hpp"
 #include <sys/epoll.h>
 
+#define RECV_BUFFER_SIZE 1024
+
 void webserver(const std::vector<ServerConfig>& servers);
 
 class Server {
@@ -28,20 +30,19 @@ class Server {
 
 	Server(const std::vector<ServerConfig>& servers); //Initializer
 
-	// bool isListeningSocket(int fd);
+	bool isListeningSocket(int fd);
 
-	// void acceptNewClient(int listening_fd);
-	// void addnewClient(int fd);
+	void acceptNewClient(int listening_fd);
 	// void removeClient(int fd);
 
 	// void eventLoop(void);
 
 	// void handleClientEvent(int fd);
-	// void receiveData(int fd);
-	// bool requestComplete(int fd);
+	void receiveData(int fd);
+	bool requestComplete(int fd);
 	// void processRequest(int fd);
 
-	// void server_cleanup(void);
+	void server_cleanup(void);
 
 };
 
