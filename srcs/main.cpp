@@ -17,7 +17,9 @@ int main(int argc, char **argv) {
         ConfigParser parser(configPath);
         const std::vector<ServerConfig>& servers = parser.getServers();
 
-        webserver(servers);
+        Server webserver(servers);
+        webserver.eventLoop();
+
     } catch (const std::exception& e) {
         std::cerr << "[ERROR] " << e.what() << "\n";
         return 1;

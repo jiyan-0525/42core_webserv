@@ -13,8 +13,7 @@
 #include <sys/epoll.h>
 
 #define RECV_BUFFER_SIZE 1024
-
-void webserver(const std::vector<ServerConfig>& servers);
+#define MAX_CLIENTS 1024
 
 class Server {
 
@@ -25,17 +24,17 @@ class Server {
 	int epfd; //needs to be initilazied by the constructor
 	struct epoll_event events[100];
 
+	Server(const std::vector<ServerConfig>& servers); //Initializer
+
+	void eventLoop(void);
+
 	void createListeningSocket(int port); // the function itself will do listeningSockets.push_back(fd);
 	void initializeEpoll(void);
-
-	Server(const std::vector<ServerConfig>& servers); //Initializer
 
 	bool isListeningSocket(int fd);
 
 	void acceptNewClient(int listening_fd);
 	// void removeClient(int fd);
-
-	// void eventLoop(void);
 
 	// void handleClientEvent(int fd);
 	void receiveData(int fd);
