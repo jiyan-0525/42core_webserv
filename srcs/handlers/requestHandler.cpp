@@ -107,7 +107,6 @@ HttpResponse RequestHandler::handlePost(const HttpRequest& req, const LocationCo
     if (loc.upload_dir.empty())
         return buildError(403, server);
 
-    // simple naive filename: use a header or generate one
     std::string filename = "upload_" + std::to_string(rand()) + ".bin";
     if (req.hasHeader("X-Filename")) // optional custom header approach
         filename = req.getHeader("X-Filename");
@@ -149,7 +148,7 @@ HttpResponse RequestHandler::handleDelete(const HttpRequest& req, const Location
     return response;
 }
 
-// ---------- MAIN ENTRY POINT, which will be called by Server.cpp ----------
+// ---------- MAIN ENTRY POINT ----------
 HttpResponse RequestHandler::processRequest(const HttpRequest& req, const ServerConfig& server)
 {
     const LocationConfig* loc = matchLocation(server, req.getPath());
