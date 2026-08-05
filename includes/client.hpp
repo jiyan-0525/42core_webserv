@@ -70,6 +70,4 @@ struct Client
 	}
 };
 
-void one_server(int port);
-
 #endif
