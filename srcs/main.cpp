@@ -1,5 +1,6 @@
 #include "configParser.hpp"
 #include "client.hpp"
+#include "server.hpp"
 #include <iostream>
 #include <string>
 
@@ -15,10 +16,10 @@ int main(int argc, char **argv) {
     try {
         ConfigParser parser(configPath);
         const std::vector<ServerConfig>& servers = parser.getServers();
-        std::cout << servers[0].port << std::endl;
-        std::cout << servers[1].port << std::endl;
 
-        one_server(servers[0].port);
+        Server webserver(servers);
+        webserver.eventLoop();
+
     } catch (const std::exception& e) {
         std::cerr << "[ERROR] " << e.what() << "\n";
         return 1;
