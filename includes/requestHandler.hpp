@@ -17,6 +17,7 @@ class RequestHandler {
         static HttpResponse handleGet(const HttpRequest& req, const LocationConfig& loc, const ServerConfig& server);// Handles HTTP GET requests
 		static HttpResponse handlePost(const HttpRequest& req, const LocationConfig& loc, const ServerConfig& server);
 		static HttpResponse handleDelete(const HttpRequest& req, const LocationConfig& loc, const ServerConfig& server);
+        static HttpResponse handleCgi(const HttpRequest& req, const LocationConfig& loc, const ServerConfig& server);
 		static HttpResponse buildError(int code, const ServerConfig& server);// Builds an HTTP error response
 		static std::string guessMimeType(const std::string& path);
 };

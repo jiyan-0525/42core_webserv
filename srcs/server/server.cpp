@@ -16,9 +16,10 @@
 
 Server::Server(const std::vector<ServerConfig>& servers)
 {
-    for (size_t i = 0; i < servers.size(); i++)
+    this->serverConfigs = servers;
+    for (size_t i = 0; i < this->serverConfigs.size(); i++)
     {
-        createListeningSocket(servers[i].port);
+        createListeningSocket(this->serverConfigs[i].port, i);
     }
 	initializeEpoll();
 }
@@ -54,7 +55,7 @@ void Server::eventLoop(void)
     return;
 }
 
-void Server::createListeningSocket(int port) //the function itself will do listeningSockets.push_back(fd);
+void Server::createListeningSocket(int port, size_t serverIndex) //the function itself will do listeningSockets.push_back(fd);
 {
 	std::string s_port = std::to_string(port);
 
@@ -108,6 +109,7 @@ void Server::createListeningSocket(int port) //the function itself will do liste
     std::cout << "Server is running... Open Chrome and go to http://localhost:" << s_port << std::endl;
 
 	listeningSockets.push_back(server_fd);
+    this->listeningSocketToServer[server_fd] = serverIndex;
 }
 
 void Server::initializeEpoll(void)
@@ -235,16 +237,27 @@ void Server::receiveData(int fd)
 
             // --- (real request, real config) ---
             HttpRequest request;
-            request.parseRequest(buffer);              // A REAL request from the browser
-        
-            ServerConfig server;                       // TEMPORARILY hardcoded, until a real solution is found
-            server.port = 8080;                        // config using ConfigParser (this will be connected 
-            LocationConfig root;                       // by Person 1 later)
-            root.path = "/";
-            root.root = "www";
-            root.index = "index.html";
-            root.methods.push_back("GET");
-            server.locations.push_back(root);
+            request.parseRequest(it->second.buffer); // Parse full accumulated request
+
+            ServerConfig server;
+            int localPort = -1;
+            sockaddr_in localAddr;
+            socklen_t localLen = sizeof(localAddr);
+            if (getsockname(fd, (sockaddr*)&localAddr, &localLen) == 0)
+                localPort = ntohs(localAddr.sin_port);
+
+            size_t matchedIndex = 0;
+            for (size_t idx = 0; idx < this->serverConfigs.size(); ++idx)
+            {
+                if (this->serverConfigs[idx].port == localPort)
+                {
+                    matchedIndex = idx;
+                    break;
+                }
+            }
+
+            if (!this->serverConfigs.empty())
+                server = this->serverConfigs[matchedIndex];
 
             
             // 6. Send a proper HTTP response so Chrome can read it
@@ -257,6 +270,7 @@ void Server::receiveData(int fd)
         
             // std::cout << responseText << std::endl;
             send(fd, responseText.c_str(), responseText.size(), 0);
+            it->second.buffer.clear();
 
             //I need to add a condition check
             //if ("Connection: close\r\n" == true)

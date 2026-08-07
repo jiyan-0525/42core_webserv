@@ -20,6 +20,8 @@ class Server {
 	public:
 	std::vector<int> listeningSockets;
 	std::map<int, Client> clients;
+	std::vector<ServerConfig> serverConfigs;
+	std::map<int, size_t> listeningSocketToServer;
 
 	int epfd; //needs to be initilazied by the constructor
 	struct epoll_event events[100];
@@ -28,7 +30,7 @@ class Server {
 
 	void eventLoop(void);
 
-	void createListeningSocket(int port); // the function itself will do listeningSockets.push_back(fd);
+	void createListeningSocket(int port, size_t serverIndex); // also maps listening socket to the corresponding server config
 	void initializeEpoll(void);
 
 	bool isListeningSocket(int fd);
