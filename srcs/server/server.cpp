@@ -226,7 +226,7 @@ void Server::receiveData(int fd)
         {
             it->second.request.parseRequest(it->second.buffer);
             std::cout << "===== HTTP REQUEST =====\n";
-            std::cout << it->second.buffer;
+            // std::cout << it->second.buffer;
             std::cout << "========================\n";
 
             // If we arrive here, parsing succeeded.
@@ -255,7 +255,7 @@ void Server::receiveData(int fd)
             HttpResponse response = RequestHandler::processRequest(request, server);
             std::string responseText = response.serialize();
         
-            std::cout << responseText << std::endl;
+            // std::cout << responseText << std::endl;
             send(fd, responseText.c_str(), responseText.size(), 0);
 
             //I need to add a condition check
