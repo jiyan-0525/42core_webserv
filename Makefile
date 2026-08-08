@@ -15,7 +15,7 @@ SRCS		= $(SRCS_DIR)/main.cpp \
 			  $(SRCS_DIR)/server/server.cpp\
 			  $(SRCS_DIR)/handlers/requestHandler.cpp\
 			  $(SRCS_DIR)/handlers/handleCGI.cpp\
-			  $(SRCS_DIR)/handlers/requesHandhelper.cpp\
+			  $(SRCS_DIR)/handlers/requesHanddlerUtils.cpp\
 
 OBJS		= $(SRCS:$(SRCS_DIR)/%.cpp=$(OBJS_DIR)/%.o)
 
