@@ -17,6 +17,10 @@ curl -v -X POST -d "test data" http://localhost:8080/data
 curl -v -X DELETE http://localhost:8080/uploads//
 
 curl -v -X DELETE http://localhost:8080/data//
+
+curl -s "http://localhost:8080/cgi-bin/test_get.py?name=Jiyan&query=abc"
+
+curl -s "http://localhost:8080/cgi-bin/test_post.py" -X POST -d "test data"
 ```
 # Explanation
 
