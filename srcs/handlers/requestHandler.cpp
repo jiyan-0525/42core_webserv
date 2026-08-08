@@ -117,7 +117,17 @@ HttpResponse RequestHandler::handlePost(const HttpRequest& req, const LocationCo
     if (loc.upload_dir.empty())
         return buildError(403, server);
 
-    std::string filename = "upload_" + std::to_string(rand()) + ".bin";
+    std::string cleanPath = stripQuery(req.getPath());
+    std::string filename = cleanPath.substr(loc.path.size());
+    
+    // Remove leading slash if present
+    if (!filename.empty() && filename[0] == '/')
+        filename = filename.substr(1);
+
+    // Default to random name if no filename is provided in the URL
+    if (filename.empty())
+        filename = "upload_" + std::to_string(rand()) + ".bin";
+
     if (req.hasHeader("X-Filename")) // optional custom header approach
         filename = req.getHeader("X-Filename");
 

@@ -215,21 +215,19 @@ void Server::receiveData(int fd)
     }
     else if (bytesRecv > 0)
     {
-        buffer[bytesRecv] = '\0';      // Make it a C-string
-
         std::cout << "here" << std::endl;
         std::map<int, Client>::iterator it = clients.find(fd);
         if (it != clients.end())
         {
             std::cout << "filled the client struct with the HTTP request" << std::endl;
-            it->second.buffer += buffer;
+            it->second.buffer.append(buffer, bytesRecv);
         }
         if (requestComplete(fd) == true)
         {
             it->second.request.parseRequest(it->second.buffer);
             std::cout << "===== HTTP REQUEST =====\n";
             // std::cout << it->second.buffer;
-            std::cout << "========================\n";
+            // std::cout << "========================\n";
 
             // If we arrive here, parsing succeeded.
             // Now Person 3 can build the response.

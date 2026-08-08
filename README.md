@@ -6,6 +6,18 @@
 - https://en.wikipedia.org/wiki/Berkeley_sockets
 - https://datatracker.ietf.org/doc/html/rfc7230
 - https://www.freecodecamp.org/news/learn-http-methods-like-get-post-and-delete-a-handbook-with-code-examples/#heading-get-method
+
+
+## Testing HTTP Methods
+```bash
+curl -v http://localhost:8080/uploads/
+
+curl -v -X POST -d "test data" http://localhost:8080/data
+
+curl -v -X DELETE http://localhost:8080/uploads//
+
+curl -v -X DELETE http://localhost:8080/data//
+```
 # Explanation
 
 This documentation explains how to connect my application (a C++ server running on my computer) to the network and allow it to communicate through sockets.
