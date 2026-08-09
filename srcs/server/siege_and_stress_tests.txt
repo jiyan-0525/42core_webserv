@@ -1,0 +1,26 @@
+Maximum request pressure:
+siege -b -c250 -t90s http://localhost:8080
+siege -b -c250 -r100 http://localhost:8080
+
+Add a delay between client requests (2 seconds):
+siege -c250 -td2 http://localhost:8080
+
+
+Ensure no memory leaks:
+valgrind --leak-check=full --show-leak-kinds=all ./webserv
+Stop your server (Ctrl+C) and check the Valgrind output.
+
+
+Monitor memory while Siege is running in Bash:
+pidof webserv
+watch -n 1 "ps -o pid,rss,vsz,cmd -p YOUR_PID"
+RSS (Resident Set Size) → how much of your process's memory is currently resident in physical RAM.
+VSZ (Virtual Size) → the total virtual address space reserved/mapped by the process. This includes memory that isn't actually occupying RAM.
+RSS and VSZ need to stay constant
+
+
+Check for hanging connections:
+Before siege command / during siege command / after siege command:
+ss -tan | grep ':8080' | awk '{print $1}' | sort | uniq -c
+Make sure that ESTAB = 0 after test, No active connections held by server
+

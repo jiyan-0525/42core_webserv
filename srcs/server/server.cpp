@@ -40,7 +40,7 @@ void Server::eventLoop(void)
 
             if (this->isListeningSocket(fd) == true)  //--------------Is there a new client that want to connect?------------------
             {
-                    std::cout << "here" << std::endl;
+                    std::cout << "before_accepting_new_client" << std::endl;
                     this->acceptNewClient(fd);
             }
             else  //-------------Is there an event from an already connected client?
@@ -50,6 +50,9 @@ void Server::eventLoop(void)
             }
         }
     }
+    std::cout << "Final clients.size() = "
+          << clients.size()
+          << std::endl;
     this->server_cleanup();
     return;
 }
@@ -127,6 +130,7 @@ void Server::initializeEpoll(void)
 
 void Server::acceptNewClient(int listening_fd)
 {
+    std::cout << "new_client_COMING from listening_socket_fd: " << listening_fd << std::endl;
     sockaddr_in client_addr;
     socklen_t client_len = sizeof(client_addr);
 
@@ -144,6 +148,9 @@ void Server::acceptNewClient(int listening_fd)
     if (add == -1)
         return;
     this->clients.insert(std::make_pair(client_fd, Client(client_fd)));
+    std::cout << "New client: " << client_fd
+          << " | clients.size() = " << clients.size()
+          << std::endl;
 }
 
 bool Server::isListeningSocket(int fd)
@@ -152,7 +159,10 @@ bool Server::isListeningSocket(int fd)
     for (it = this->listeningSockets.cbegin(); it != this->listeningSockets.cend(); it++)
     {
         if (fd == *it)
+        {
+            std::cout << "Event from listenning socket number:  " << fd << std::endl;
             return (true);
+        }
     }
     return false;
 }
@@ -208,14 +218,14 @@ void Server::receiveData(int fd)
     bytesRecv = recv(fd, buffer, sizeof(buffer) - 1, 0);
     if (bytesRecv == -1 || bytesRecv == 0) //remove this client
     {
-        //remove_client_function()
+        removeClient(fd);
         return;
     }
     else if (bytesRecv > 0)
     {
         buffer[bytesRecv] = '\0';      // Make it a C-string
 
-        std::cout << "here" << std::endl;
+        std::cout << "bytes_received_from_client" << std::endl;
         std::map<int, Client>::iterator it = clients.find(fd);
         if (it != clients.end())
         {
@@ -257,12 +267,23 @@ void Server::receiveData(int fd)
         
             std::cout << responseText << std::endl;
             send(fd, responseText.c_str(), responseText.size(), 0);
+            removeClient(fd);
 
             //I need to add a condition check
             //if ("Connection: close\r\n" == true)
             //REMOVE CLIENT FUNCTION!!!!
         }
     }
+}
+
+void Server::removeClient(int fd)
+{
+    epoll_ctl(this->epfd, EPOLL_CTL_DEL, fd, NULL);
+    close(fd);
+    clients.erase(fd);
+    std::cout << "Removed client: " << fd
+          << " | clients.size() = " << clients.size()
+          << std::endl;
 }
 
 void Server::server_cleanup(void)
@@ -343,6 +364,8 @@ void Server::server_cleanup(void)
 // {
 //     std::cerr << e.what() << '\n';
 // }
+
+
 
 
 

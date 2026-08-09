@@ -34,7 +34,7 @@ class Server {
 	bool isListeningSocket(int fd);
 
 	void acceptNewClient(int listening_fd);
-	// void removeClient(int fd);
+	void removeClient(int fd);
 
 	// void handleClientEvent(int fd);
 	void receiveData(int fd);
