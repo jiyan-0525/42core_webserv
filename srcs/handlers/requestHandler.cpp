@@ -1,13 +1,20 @@
 #include "requestHandler.hpp"
+#include "requesHanddlerUtils.hpp"
+#include "handleCGI.hpp"
 #include <sys/stat.h>
 #include <fstream>
 #include <sstream>
 #include <algorithm>
 #include <cstdio>
 #include <sys/stat.h>
+#include <vector>
+#include <poll.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <signal.h>
 
 // ---------- Helper function to check if a URL matches a location path ----------
-static bool isPrefixMatch(const std::string& url, const std::string& locPath)
+bool isPrefixMatch(const std::string& url, const std::string& locPath)
 {
     if (url.compare(0, locPath.size(), locPath) != 0)
         return false;
@@ -43,6 +50,8 @@ HttpResponse RequestHandler::buildError(int code, const ServerConfig& server)
     std::string reason = (code == 404) ? "Not Found"
                         : (code == 403) ? "Forbidden"
                         : (code == 405) ? "Method Not Allowed"
+                        : (code == 500) ? "Internal Server Error"
+                        : (code == 504) ? "Gateway Timeout"
                         : "Error";
     response.setStatus(code, reason);
     response.setHeader("Content-Type", "text/html");
@@ -78,8 +87,9 @@ std::string RequestHandler::guessMimeType(const std::string& path)
 // ---------- GET: Return a static file ----------
 HttpResponse RequestHandler::handleGet(const HttpRequest& req, const LocationConfig& loc, const ServerConfig& server)
 {
-    std::string relativePart = req.getPath().substr(loc.path.size());
-    std::string fullPath = loc.root + relativePart;
+    std::string cleanPath = stripQuery(req.getPath());
+    std::string relativePart = cleanPath.substr(loc.path.size());
+    std::string fullPath = joinPath(loc.root, relativePart);
 
     struct stat pathStat;
     if (stat(fullPath.c_str(), &pathStat) != 0)
@@ -109,8 +119,17 @@ HttpResponse RequestHandler::handlePost(const HttpRequest& req, const LocationCo
     if (loc.upload_dir.empty())
         return buildError(403, server);
 
-    // simple naive filename: use a header or generate one
-    std::string filename = "upload_" + std::to_string(rand()) + ".bin";
+    std::string cleanPath = stripQuery(req.getPath());
+    std::string filename = cleanPath.substr(loc.path.size());
+    
+    // Remove leading slash if present
+    if (!filename.empty() && filename[0] == '/')
+        filename = filename.substr(1);
+
+    // Default to random name if no filename is provided in the URL
+    if (filename.empty())
+        filename = "upload_" + std::to_string(rand()) + ".bin";
+
     if (req.hasHeader("X-Filename")) // optional custom header approach
         filename = req.getHeader("X-Filename");
 
@@ -134,8 +153,9 @@ HttpResponse RequestHandler::handlePost(const HttpRequest& req, const LocationCo
 // ---------- DELETE: remove a file ----------
 HttpResponse RequestHandler::handleDelete(const HttpRequest& req, const LocationConfig& loc, const ServerConfig& server)
 {
-    std::string relativePart = req.getPath().substr(loc.path.size());
-    std::string fullPath = loc.root + relativePart;
+    std::string cleanPath = stripQuery(req.getPath());
+    std::string relativePart = cleanPath.substr(loc.path.size());
+    std::string fullPath = joinPath(loc.root, relativePart);
 
     struct stat pathStat;
     if (stat(fullPath.c_str(), &pathStat) != 0)
@@ -152,23 +172,3 @@ HttpResponse RequestHandler::handleDelete(const HttpRequest& req, const Location
     return response;
 }
 
-// ---------- MAIN ENTRY POINT, which will be called by Server.cpp ----------
-HttpResponse RequestHandler::processRequest(const HttpRequest& req, const ServerConfig& server)
-{
-    const LocationConfig* loc = matchLocation(server, req.getPath());
-    if (loc == nullptr)
-        return buildError(404, server);
-
-    const std::string& method = req.getMethod();
-    if (std::find(loc->methods.begin(), loc->methods.end(), method) == loc->methods.end())
-        return buildError(405, server);
-
-    if (method == "GET")
-        return handleGet(req, *loc, server);
-    if (method == "POST")
-        return handlePost(req, *loc, server);
-    if (method == "DELETE")
-        return handleDelete(req, *loc, server);
-
-    return buildError(501, server);
-}

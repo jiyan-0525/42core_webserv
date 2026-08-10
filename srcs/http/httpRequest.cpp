@@ -5,11 +5,25 @@ HttpRequest::HttpRequest() : _method(""), _path(""), _version(""), _body("") {}
 HttpRequest::~HttpRequest() {}
 
 void HttpRequest::parseRequest(const std::string& rawRequest) {
-    std::istringstream requestStream(rawRequest);
+    size_t headerEnd = rawRequest.find("\r\n\r\n");
+    std::string headerPart;
+    if (headerEnd == std::string::npos) {
+        headerPart = rawRequest;
+        this->_body = "";
+    } else {
+        headerPart = rawRequest.substr(0, headerEnd);
+        this->_body = rawRequest.substr(headerEnd + 4);
+    }
+
+    std::istringstream requestStream(headerPart);
     std::string requestLine;
     
     if (!std::getline(requestStream, requestLine)) {
         throw std::runtime_error("Invalid HTTP request: empty request line");
+    }
+
+    if (!requestLine.empty() && requestLine.back() == '\r') {
+        requestLine.pop_back(); // Remove trailing carriage return
     }
 
     std::vector<std::string> requestLineParts = split(requestLine, ' ');
@@ -21,14 +35,14 @@ void HttpRequest::parseRequest(const std::string& rawRequest) {
         throw std::runtime_error("Invalid HTTP request: malformed request line");
     }
 
-    while (std::getline(requestStream, requestLine) && requestLine != "\r") {
-        std::cout << "Received request: Happy Parser" << std::endl;           //This line is just to show that the request is successufully arriving to the parser (Lucie)
-        if (requestLine.empty() || requestLine == "\r") {
-            break;
-        }
+    while (std::getline(requestStream, requestLine)) {
         if (!requestLine.empty() && requestLine.back() == '\r') {
             requestLine.pop_back(); // Remove trailing carriage return
         }
+        if (requestLine.empty()) {
+            continue;
+        }
+        
         size_t colonPos = requestLine.find(':');
         if (colonPos != std::string::npos) {
             std::string key = requestLine.substr(0, colonPos);
@@ -42,16 +56,6 @@ void HttpRequest::parseRequest(const std::string& rawRequest) {
 
             this->_headers[key] = value;
         }
-    }
-
-    this->_body = "";
-    std::ostringstream bodyStream;
-    while (std::getline(requestStream, requestLine)) {
-        bodyStream << requestLine << "\n";
-    }
-    this->_body = bodyStream.str();
-    if (!_body.empty() && this->_body.back() == '\n') {
-        this->_body.pop_back();
     }
 }
 
