@@ -16,6 +16,8 @@ curl -v -X POST -d "test data" http://localhost:8080/data
 
 curl -X POST -F "file=@test.txt" http://localhost:8080/files
 
+curl -v -X PUT --data-binary "@your_file.txt" http://localhost:8080/data//
+
 curl -v -X DELETE http://localhost:8080/uploads//
 
 curl -v -X DELETE http://localhost:8080/data//

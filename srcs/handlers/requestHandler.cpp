@@ -55,6 +55,7 @@ HttpResponse RequestHandler::buildError(int code, const ServerConfig& server)
                         : "Error";
     response.setStatus(code, reason);
     response.setHeader("Content-Type", "text/html");
+    response.setHeader("Connection", "close");
 
     auto it = server.error_pages.find(code);
     if (it != server.error_pages.end())
@@ -107,6 +108,7 @@ HttpResponse RequestHandler::handleGet(const HttpRequest& req, const LocationCon
     HttpResponse response;
     response.setStatus(200, "OK");
     response.setHeader("Content-Type", guessMimeType(fullPath));
+    response.setHeader("Connection", "close");
     response.setBody(contents.str());
     return response;
 }
@@ -143,6 +145,7 @@ HttpResponse RequestHandler::handlePost(const HttpRequest& req, const LocationCo
     HttpResponse response;
     response.setStatus(201, "Created");
     response.setHeader("Content-Type", "text/html");
+    response.setHeader("Connection", "close");
     response.setBody("<html><body><h1>201 Created</h1><p>File uploaded: " + filename + "</p></body></html>");
     return response;
 }

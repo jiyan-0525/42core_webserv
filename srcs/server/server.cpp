@@ -16,10 +16,9 @@
 
 Server::Server(const std::vector<ServerConfig>& servers)
 {
-    this->serverConfigs = servers;
-    for (size_t i = 0; i < this->serverConfigs.size(); i++)
+    for (size_t i = 0; i < servers.size(); i++)
     {
-        createListeningSocket(this->serverConfigs[i].port, i);
+        createListeningSocket(servers[i].port);
     }
 	initializeEpoll();
 }
@@ -41,21 +40,31 @@ void Server::eventLoop(void)
 
             if (this->isListeningSocket(fd) == true)  //--------------Is there a new client that want to connect?------------------
             {
-                    std::cout << "here" << std::endl;
+                    std::cout << "before_accepting_new_client" << std::endl;
                     this->acceptNewClient(fd);
             }
             else  //-------------Is there an event from an already connected client?
             {
                 std::cout << "Event from an already connected client" << std::endl;
-                this->receiveData(fd);
+                if (events[i].events & EPOLLIN)
+                {
+                    this->receiveData(fd);
+                }
+                if (events[i].events & EPOLLOUT)
+                {
+                    sendResponse(fd);
+                }
             }
         }
     }
+    std::cout << "Final clients.size() = "
+          << clients.size()
+          << std::endl;
     this->server_cleanup();
     return;
 }
 
-void Server::createListeningSocket(int port, size_t serverIndex) //the function itself will do listeningSockets.push_back(fd);
+void Server::createListeningSocket(int port) //the function itself will do listeningSockets.push_back(fd);
 {
 	std::string s_port = std::to_string(port);
 
@@ -109,7 +118,6 @@ void Server::createListeningSocket(int port, size_t serverIndex) //the function 
     std::cout << "Server is running... Open Chrome and go to http://localhost:" << s_port << std::endl;
 
 	listeningSockets.push_back(server_fd);
-    this->listeningSocketToServer[server_fd] = serverIndex;
 }
 
 void Server::initializeEpoll(void)
@@ -129,6 +137,7 @@ void Server::initializeEpoll(void)
 
 void Server::acceptNewClient(int listening_fd)
 {
+    std::cout << "new_client_COMING from listening_socket_fd: " << listening_fd << std::endl;
     sockaddr_in client_addr;
     socklen_t client_len = sizeof(client_addr);
 
@@ -139,13 +148,16 @@ void Server::acceptNewClient(int listening_fd)
     fcntl(client_fd, F_SETFL, O_NONBLOCK);
 
     struct epoll_event client_event = {};
-    client_event.events = EPOLLIN;
+    client_event.events = EPOLLIN;   //Tell me when the socket is ready for reading
     client_event.data.fd = client_fd;
 
     int add = epoll_ctl(this->epfd, EPOLL_CTL_ADD, client_fd, &client_event); //added the new client to the epoll
     if (add == -1)
         return;
     this->clients.insert(std::make_pair(client_fd, Client(client_fd)));
+    std::cout << "New client: " << client_fd
+          << " | clients.size() = " << clients.size()
+          << std::endl;
 }
 
 bool Server::isListeningSocket(int fd)
@@ -154,7 +166,10 @@ bool Server::isListeningSocket(int fd)
     for (it = this->listeningSockets.cbegin(); it != this->listeningSockets.cend(); it++)
     {
         if (fd == *it)
+        {
+            std::cout << "Event from listenning socket number:  " << fd << std::endl;
             return (true);
+        }
     }
     return false;
 }
@@ -210,71 +225,80 @@ void Server::receiveData(int fd)
     bytesRecv = recv(fd, buffer, sizeof(buffer) - 1, 0);
     if (bytesRecv == -1 || bytesRecv == 0) //remove this client
     {
-        //remove_client_function()
+        removeClient(fd);
         return;
     }
     else if (bytesRecv > 0)
     {
-        std::cout << "here" << std::endl;
+        buffer[bytesRecv] = '\0';      // Make it a C-string
+
+        std::cout << "bytes_received_from_client" << std::endl;
         std::map<int, Client>::iterator it = clients.find(fd);
-        if (it != clients.end())
+        if (it == clients.end())
+            return;
+
+        std::cout << "filled the client struct with the HTTP request" << std::endl;
+        it->second.buffer += buffer;
+
+        if (requestComplete(fd) == true) //Once the request is complete, I want epoll() to tell me when the socket is ready for writing
         {
-            std::cout << "filled the client struct with the HTTP request" << std::endl;
-            it->second.buffer.append(buffer, bytesRecv);
-        }
-        if (requestComplete(fd) == true)
-        {
+            struct epoll_event event = {};
+            event.events = EPOLLOUT;
+            event.data.fd = fd;
+            epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &event);
+
             it->second.request.parseRequest(it->second.buffer);
             std::cout << "===== HTTP REQUEST =====\n";
-            // std::cout << it->second.buffer;
-            // std::cout << "========================\n";
-
-            // If we arrive here, parsing succeeded.
-            // Now Person 3 can build the response.
-            //clients[i].response.generateResponse(clients[i].request);
-
-            // --- (real request, real config) ---
-            HttpRequest request;
-            request.parseRequest(it->second.buffer); // Parse full accumulated request
-
-            ServerConfig server;
-            int localPort = -1;
-            sockaddr_in localAddr;
-            socklen_t localLen = sizeof(localAddr);
-            if (getsockname(fd, (sockaddr*)&localAddr, &localLen) == 0)
-                localPort = ntohs(localAddr.sin_port);
-
-            size_t matchedIndex = 0;
-            for (size_t idx = 0; idx < this->serverConfigs.size(); ++idx)
-            {
-                if (this->serverConfigs[idx].port == localPort)
-                {
-                    matchedIndex = idx;
-                    break;
-                }
-            }
-
-            if (!this->serverConfigs.empty())
-                server = this->serverConfigs[matchedIndex];
-
-            
-            // 6. Send a proper HTTP response so Chrome can read it
-            // The browser needs the "HTTP/1.1 200 OK" header to know it's a valid webpage
-            // The client can almost always receive a response
-            //So it is actually better to check if he can receive a response when the response is ready
-        
-            HttpResponse response = RequestHandler::processRequest(request, server);
-            std::string responseText = response.serialize();
-        
-            // std::cout << responseText << std::endl;
-            send(fd, responseText.c_str(), responseText.size(), 0);
-            it->second.buffer.clear();
-
-            //I need to add a condition check
-            //if ("Connection: close\r\n" == true)
-            //REMOVE CLIENT FUNCTION!!!!
+            std::cout << it->second.buffer;
+            std::cout << "========================\n";
         }
     }
+}
+
+void Server::sendResponse(int fd)
+{
+    std::map<int, Client>::iterator it = clients.find(fd);
+    // If we arrive here, parsing succeeded.
+    // Now Person 3 can build the response.
+    //clients[i].response.generateResponse(clients[i].request);
+
+    // --- (real request, real config) ---
+    HttpRequest request;
+    request.parseRequest(it->second.buffer);              // A REAL request from the browser
+
+    ServerConfig server;                       // TEMPORARILY hardcoded, until a real solution is found
+    server.port = 8080;                        // config using ConfigParser (this will be connected 
+    LocationConfig root;                       // by Person 1 later)
+    root.path = "/";
+    root.root = "www";
+    root.index = "index.html";
+    root.methods.push_back("GET");
+    server.locations.push_back(root);
+    // 6. Send a proper HTTP response so Chrome can read it
+    // The browser needs the "HTTP/1.1 200 OK" header to know it's a valid webpage
+    // The client can almost always receive a response
+    //So it is actually better to check if he can receive a response when the response is ready
+
+    HttpResponse response = RequestHandler::processRequest(request, server);
+    std::string responseText = response.serialize();
+
+    std::cout << responseText << std::endl;
+    send(fd, responseText.c_str(), responseText.size(), 0);
+    removeClient(fd);
+
+    //I need to add a condition check
+    //if ("Connection: close\r\n" == true)
+    //REMOVE CLIENT FUNCTION!!!!
+}
+
+void Server::removeClient(int fd)
+{
+    epoll_ctl(this->epfd, EPOLL_CTL_DEL, fd, NULL);
+    close(fd);
+    clients.erase(fd);
+    std::cout << "Removed client: " << fd
+          << " | clients.size() = " << clients.size()
+          << std::endl;
 }
 
 void Server::server_cleanup(void)
@@ -355,6 +379,8 @@ void Server::server_cleanup(void)
 // {
 //     std::cerr << e.what() << '\n';
 // }
+
+
 
 
 
