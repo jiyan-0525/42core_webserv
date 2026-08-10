@@ -39,6 +39,7 @@ class Server {
 	// void handleClientEvent(int fd);
 	void receiveData(int fd);
 	bool requestComplete(int fd);
+	void sendResponse(int fd);
 	// void processRequest(int fd);
 
 	void server_cleanup(void);

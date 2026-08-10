@@ -46,7 +46,14 @@ void Server::eventLoop(void)
             else  //-------------Is there an event from an already connected client?
             {
                 std::cout << "Event from an already connected client" << std::endl;
-                this->receiveData(fd);
+                if (events[i].events & EPOLLIN)
+                {
+                    this->receiveData(fd);
+                }
+                if (events[i].events & EPOLLOUT)
+                {
+                    sendResponse(fd);
+                }
             }
         }
     }
@@ -141,7 +148,7 @@ void Server::acceptNewClient(int listening_fd)
     fcntl(client_fd, F_SETFL, O_NONBLOCK);
 
     struct epoll_event client_event = {};
-    client_event.events = EPOLLIN;
+    client_event.events = EPOLLIN;   //Tell me when the socket is ready for reading
     client_event.data.fd = client_fd;
 
     int add = epoll_ctl(this->epfd, EPOLL_CTL_ADD, client_fd, &client_event); //added the new client to the epoll
@@ -227,53 +234,61 @@ void Server::receiveData(int fd)
 
         std::cout << "bytes_received_from_client" << std::endl;
         std::map<int, Client>::iterator it = clients.find(fd);
-        if (it != clients.end())
+        if (it == clients.end())
+            return;
+
+        std::cout << "filled the client struct with the HTTP request" << std::endl;
+        it->second.buffer += buffer;
+
+        if (requestComplete(fd) == true) //Once the request is complete, I want epoll() to tell me when the socket is ready for writing
         {
-            std::cout << "filled the client struct with the HTTP request" << std::endl;
-            it->second.buffer += buffer;
-        }
-        if (requestComplete(fd) == true)
-        {
+            struct epoll_event event = {};
+            event.events = EPOLLOUT;
+            event.data.fd = fd;
+            epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &event);
+
             it->second.request.parseRequest(it->second.buffer);
             std::cout << "===== HTTP REQUEST =====\n";
             std::cout << it->second.buffer;
             std::cout << "========================\n";
-
-            // If we arrive here, parsing succeeded.
-            // Now Person 3 can build the response.
-            //clients[i].response.generateResponse(clients[i].request);
-
-            // --- (real request, real config) ---
-            HttpRequest request;
-            request.parseRequest(buffer);              // A REAL request from the browser
-        
-            ServerConfig server;                       // TEMPORARILY hardcoded, until a real solution is found
-            server.port = 8080;                        // config using ConfigParser (this will be connected 
-            LocationConfig root;                       // by Person 1 later)
-            root.path = "/";
-            root.root = "www";
-            root.index = "index.html";
-            root.methods.push_back("GET");
-            server.locations.push_back(root);
-
-            
-            // 6. Send a proper HTTP response so Chrome can read it
-            // The browser needs the "HTTP/1.1 200 OK" header to know it's a valid webpage
-            // The client can almost always receive a response
-            //So it is actually better to check if he can receive a response when the response is ready
-        
-            HttpResponse response = RequestHandler::processRequest(request, server);
-            std::string responseText = response.serialize();
-        
-            std::cout << responseText << std::endl;
-            send(fd, responseText.c_str(), responseText.size(), 0);
-            removeClient(fd);
-
-            //I need to add a condition check
-            //if ("Connection: close\r\n" == true)
-            //REMOVE CLIENT FUNCTION!!!!
         }
     }
+}
+
+void Server::sendResponse(int fd)
+{
+    std::map<int, Client>::iterator it = clients.find(fd);
+    // If we arrive here, parsing succeeded.
+    // Now Person 3 can build the response.
+    //clients[i].response.generateResponse(clients[i].request);
+
+    // --- (real request, real config) ---
+    HttpRequest request;
+    request.parseRequest(it->second.buffer);              // A REAL request from the browser
+
+    ServerConfig server;                       // TEMPORARILY hardcoded, until a real solution is found
+    server.port = 8080;                        // config using ConfigParser (this will be connected 
+    LocationConfig root;                       // by Person 1 later)
+    root.path = "/";
+    root.root = "www";
+    root.index = "index.html";
+    root.methods.push_back("GET");
+    server.locations.push_back(root);
+    // 6. Send a proper HTTP response so Chrome can read it
+    // The browser needs the "HTTP/1.1 200 OK" header to know it's a valid webpage
+    // The client can almost always receive a response
+    //So it is actually better to check if he can receive a response when the response is ready
+
+    HttpResponse response = RequestHandler::processRequest(request, server);
+    std::string responseText = response.serialize();
+
+    std::cout << responseText << std::endl;
+    send(fd, responseText.c_str(), responseText.size(), 0);
+    removeClient(fd);
+
+    //I need to add a condition check
+    //if ("Connection: close\r\n" == true)
+    //REMOVE CLIENT FUNCTION!!!!
 }
 
 void Server::removeClient(int fd)
