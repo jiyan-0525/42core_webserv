@@ -1,0 +1,23 @@
+--------------------------a6b15cdab4f51584
+Content-Disposition: form-data; name="file"; filename="websevlogic.txt"
+Content-Type: text/plain
+
+Webserv 42 — Full Logic Explained
+
+🎯 What is the project?
+You're building an HTTP web server from scratch in C++98, similar to a simplified NGINX. When a browser (like Chrome) connects to your server, it should be able to:
+
+Serve static files (HTML, CSS, images)
+Handle HTTP methods (GET, POST, DELETE)
+Execute CGI scripts (e.g., Python)
+Handle multiple clients simultaneously using non-blocking I/O (poll())
+Be configured via a config file (NGINX-style syntax)
+🏗️ The Big Picture — The Request/Response Pipeline
+Every single thing in your project fits inside this pipeline:
+
+Browser (Chrome) types http://localhost:8080
+        │
+        ▼
+  ┌─────────────────────────────────────┐
+  │  1. CONFIG PARSER                   │  ← Read default.conf at startup
+  �
