@@ -313,23 +313,18 @@ void Server::sendResponse(int fd)
     {
         it->second.total_bytesSent += bytesSent;
         if (it->second.total_bytesSent == responseText.size())
-        {
-            it->second.buffer.clear();
             removeClient(fd);
-        }
     }
     else
-    {
-        it->second.buffer.clear();
-        removeClient(fd);
-    }
-        
+        removeClient(fd);  
 }
 
 void Server::removeClient(int fd)
 {
     epoll_ctl(this->epfd, EPOLL_CTL_DEL, fd, NULL);
     close(fd);
+    std::map<int, Client>::iterator it = clients.find(fd);
+    it->second.buffer.clear();
     clients.erase(fd);
     std::cout << "Removed client: " << fd
           << " | clients.size() = " << clients.size()
