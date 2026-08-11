@@ -19,7 +19,7 @@ void HttpResponse::setHeader(const std::string& key, const std::string& value)
 void HttpResponse::setBody(const std::string& body)
 {
     body_ = body;
-    headers_["Content-Length"] = std::to_string(body_.size()); // ок, у нас C++17
+    headers_["Content-Length"] = std::to_string(body_.size());
 }
 
 int HttpResponse::getStatusCode() const { return statusCode_; }
