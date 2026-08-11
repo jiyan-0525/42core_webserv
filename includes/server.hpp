@@ -30,7 +30,7 @@ class Server {
 
 	void eventLoop(void);
 
-	void createListeningSocket(int port);//, size_t serverIndex); // also maps listening socket to the corresponding server config
+	void createListeningSocket(int port, size_t serverIndex); // also maps listening socket to the corresponding server config
 	void initializeEpoll(void);
 
 	bool isListeningSocket(int fd);
@@ -40,6 +40,7 @@ class Server {
 
 	// void handleClientEvent(int fd);
 	void receiveData(int fd);
+	bool knownRequest(int fd);
 	bool requestComplete(int fd);
 	void sendResponse(int fd);
 	// void processRequest(int fd);

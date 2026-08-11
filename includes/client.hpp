@@ -60,6 +60,8 @@ struct Client
 	//HttpResponse response; //TO DO
 
 	bool keep_alive;
+
+	unsigned long total_bytesSent;
 	
 	Client(int socket_fd)
 	{
@@ -67,6 +69,7 @@ struct Client
 		buffer = "";
 		request_complete = false;
 		keep_alive = true;
+		total_bytesSent = 0;
 	}
 };
 
