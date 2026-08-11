@@ -13,6 +13,7 @@ SRCS		= $(SRCS_DIR)/main.cpp \
 			  $(SRCS_DIR)/http/httpRequest.cpp \
 			  $(SRCS_DIR)/http/httpResponse.cpp \
 			  $(SRCS_DIR)/server/server.cpp\
+			  $(SRCS_DIR)/signals/signals.cpp\
 			  $(SRCS_DIR)/handlers/requestHandler.cpp\
 			  $(SRCS_DIR)/handlers/handleCGI.cpp\
 			  $(SRCS_DIR)/handlers/requesHanddlerUtils.cpp\

@@ -4,6 +4,7 @@
 #include "../../includes/httpResponse.hpp"
 #include "../../includes/requestHandler.hpp"
 #include "../../includes/config.hpp"
+#include "../../includes/signals.hpp"
 #include <iostream>
 #include <stdexcept>
 #include <cstring>
@@ -26,12 +27,16 @@ Server::Server(const std::vector<ServerConfig>& servers)
 
 void Server::eventLoop(void)
 {
-    while (1)
+    while (g_running)
     {
         int events_number = epoll_wait(this->epfd, this->events, 100, 100);
 
         if (events_number == -1)
+        {
+            if (!g_running)
+                break ;
             exit(EXIT_FAILURE);
+        }
         else if (events_number == 0)
             continue;
         
@@ -58,7 +63,7 @@ void Server::eventLoop(void)
             }
         }
     }
-    std::cout << "Final clients.size() = "
+    std::cout << "\nFinal clients.size() = "
           << clients.size()
           << std::endl;
     this->server_cleanup();
