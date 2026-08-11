@@ -1,10 +1,12 @@
 #include "configParser.hpp"
 #include "client.hpp"
 #include "server.hpp"
+#include "signals.hpp"
 #include <iostream>
 #include <string>
 
 int main(int argc, char **argv) {
+    signal(SIGINT, handleSigint);
     const char* configPath;
     if (argc < 2) {
         configPath = "config/default.conf";
