@@ -6,6 +6,7 @@
 - https://en.wikipedia.org/wiki/Berkeley_sockets
 - https://datatracker.ietf.org/doc/html/rfc7230
 - https://www.freecodecamp.org/news/learn-http-methods-like-get-post-and-delete-a-handbook-with-code-examples/#heading-get-method
+- https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#1xx_informational_response
 
 
 ## Testing HTTP Methods
