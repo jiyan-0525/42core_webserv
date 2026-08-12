@@ -26,6 +26,13 @@ curl -v -X DELETE http://localhost:8080/data//
 curl -s "http://localhost:8080/cgi-bin/test_get.py?name=Jiyan&query=abc"
 
 curl -s "http://localhost:8080/cgi-bin/test_post.py" -X POST -d "test data"
+
+curl --resolve localhost:8080:127.0.0.1 http://localhost:8080/
+
+curl --resolve example.com:8081:127.0.0.1 http://example.com:8081/
+
+curl --resolve foo.com:8082:127.0.0.1 http://foo.com:8082/
+
 ```
 # Explanation
 
