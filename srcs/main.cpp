@@ -4,9 +4,12 @@
 #include "signals.hpp"
 #include <iostream>
 #include <string>
+#include <csignal>
 
 int main(int argc, char **argv) {
-    signal(SIGINT, handleSigint);
+    signal(SIGINT, handleSignal);
+    signal(SIGTERM, handleSignal);
+    signal(SIGPIPE, SIG_IGN);
     const char* configPath;
     if (argc < 2) {
         configPath = "config/default.conf";

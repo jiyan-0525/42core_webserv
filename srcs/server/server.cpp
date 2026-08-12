@@ -14,6 +14,7 @@
 #include <map>
 #include <sys/epoll.h>
 #include <fcntl.h>
+#include <cerrno>
 
 Server::Server(const std::vector<ServerConfig>& servers)
 {
@@ -33,9 +34,10 @@ void Server::eventLoop(void)
 
         if (events_number == -1)
         {
-            if (!g_running)
+            if (!g_running || errno == EINTR)
                 break ;
-            exit(EXIT_FAILURE);
+            std::cerr << "epoll_wait: " << strerror(errno) << std::endl;
+            break ;
         }
         else if (events_number == 0)
             continue;
@@ -181,59 +183,151 @@ bool Server::isListeningSocket(int fd)
     return false;
 }
 
+// static size_t getContentLength(const std::string& buffer)
+// {
+//     size_t pos = buffer.find("Content-Length:");
+
+//     if (pos == std::string::npos)
+//         return 0; // No Content-Length header
+
+//     pos += std::string("Content-Length:").length();
+
+//     // Skip spaces after :
+//     while (buffer[pos] == ' ')
+//         pos++;
+
+//     size_t end = buffer.find("\r\n", pos);
+
+//     std::string length = buffer.substr(pos, end - pos);
+
+//     return std::atoi(length.c_str());
+// }
+
 static size_t getContentLength(const std::string& buffer)
 {
     size_t pos = buffer.find("Content-Length:");
+    if (pos == std::string::npos)
+        pos = buffer.find("content-length:");
 
     if (pos == std::string::npos)
-        return 0; // No Content-Length header
+        return 0;
 
     pos += std::string("Content-Length:").length();
 
-    // Skip spaces after :
-    while (buffer[pos] == ' ')
+    // Skip spaces
+    while (pos < buffer.size() && (buffer[pos] == ' ' || buffer[pos] == '\t'))
         pos++;
 
     size_t end = buffer.find("\r\n", pos);
+    if (end == std::string::npos)
+        end = buffer.find("\n", pos);
+
+    if (end == std::string::npos)
+        return 0;
 
     std::string length = buffer.substr(pos, end - pos);
-
     return std::atoi(length.c_str());
 }
+
+// bool Server::requestComplete(int fd)
+// {
+//     std::map<int, Client>::iterator it = clients.find(fd);
+//     if (it == clients.end())
+//         return (false);
+
+//     size_t headerEnd = it->second.buffer.find("\r\n\r\n");
+//     // Haven't received all headers yet
+//     if (headerEnd == std::string::npos)
+//         return false;
+//     if (it->second.buffer.find("GET") != std::string::npos || it->second.buffer.find("DELETE") != std::string::npos) //so a position was found
+//         return (true);
+//     if (it->second.buffer.find("POST") != std::string::npos)
+//     {
+//         size_t contentLength = getContentLength(it->second.buffer);
+//         size_t bodySize = it->second.buffer.size() - (headerEnd + 4);
+
+//         if (bodySize >= contentLength)
+//             return (true);
+//     }
+//     return (false);
+// }
 
 bool Server::requestComplete(int fd)
 {
     std::map<int, Client>::iterator it = clients.find(fd);
     if (it == clients.end())
-        return (false);
+        return false;
 
+    // 1. Support of \r\n\r\n (standard), also \n\n (nc/telnet)
     size_t headerEnd = it->second.buffer.find("\r\n\r\n");
-    // Haven't received all headers yet
+    size_t delimiterLen = 4;
+
+    if (headerEnd == std::string::npos)
+    {
+        headerEnd = it->second.buffer.find("\n\n");
+        delimiterLen = 2;
+    }
+
+    // headers have not yet been received in full
     if (headerEnd == std::string::npos)
         return false;
-    if (it->second.buffer.find("GET") != std::string::npos || it->second.buffer.find("DELETE") != std::string::npos) //so a position was found
-        return (true);
+
+    // 2. If it is GET or DELETE — after headers the request is ready
+    if (it->second.buffer.find("GET") == 0 || it->second.buffer.find("DELETE") == 0 ||
+        it->second.buffer.find("GET ") != std::string::npos || it->second.buffer.find("DELETE ") != std::string::npos)
+    {
+        return true;
+    }
+
+    // 3. If it is POST — check if we have fuul body by Content-Length
     if (it->second.buffer.find("POST") != std::string::npos)
     {
         size_t contentLength = getContentLength(it->second.buffer);
-        size_t bodySize = it->second.buffer.size() - (headerEnd + 4);
+        size_t bodySize = it->second.buffer.size() - (headerEnd + delimiterLen);
 
         if (bodySize >= contentLength)
-            return (true);
+            return true;
     }
-    return (false);
+
+    return false;
 }
 
-bool Server::knownRequest(int fd) // I only want to accept GET, DELETE and POST requests
+// bool Server::knownRequest(int fd) // I only want to accept GET, DELETE and POST requests
+// {
+//     std::map<int, Client>::iterator it = clients.find(fd);
+//     if (it == clients.end())
+//         return (false);
+
+//     if (it->second.buffer.find("GET") != std::string::npos || it->second.buffer.find("DELETE") != std::string::npos || it->second.buffer.find("POST") != std::string::npos) //so a position was found
+//         return (true);
+//     std::cout << "My client received an unknown request" << std::endl;
+//     return (false);
+// }
+
+bool Server::knownRequest(int fd)
 {
     std::map<int, Client>::iterator it = clients.find(fd);
     if (it == clients.end())
-        return (false);
+        return false;
 
-    if (it->second.buffer.find("GET") != std::string::npos || it->second.buffer.find("DELETE") != std::string::npos || it->second.buffer.find("POST") != std::string::npos) //so a position was found
-        return (true);
+    // we check the method only after we have at least first line of request (Request Line)
+    size_t firstLineEnd = it->second.buffer.find("\r\n");
+    if (firstLineEnd == std::string::npos)
+        firstLineEnd = it->second.buffer.find("\n");
+
+    // even if we haven't finished reading the first line yet — we wait to continue (return true)
+    if (firstLineEnd == std::string::npos)
+        return true;
+
+    if (it->second.buffer.find("GET") != std::string::npos || 
+        it->second.buffer.find("DELETE") != std::string::npos || 
+        it->second.buffer.find("POST") != std::string::npos)
+    {
+        return true;
+    }
+
     std::cout << "My client received an unknown request" << std::endl;
-    return (false);
+    return false;
 }
 
 void Server::receiveData(int fd)

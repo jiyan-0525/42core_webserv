@@ -87,9 +87,15 @@ std::string RequestHandler::guessMimeType(const std::string& path)
 // ---------- GET: Return a static file ----------
 HttpResponse RequestHandler::handleGet(const HttpRequest& req, const LocationConfig& loc, const ServerConfig& server)
 {
+    if (req.getPath().find("..") != std::string::npos)
+        return buildError(400, server);
+
     std::string cleanPath = stripQuery(req.getPath());
     std::string relativePart = cleanPath.substr(loc.path.size());
     std::string fullPath = joinPath(loc.root, relativePart);
+
+    if (loc.root.empty())
+        return buildError(500, server);
 
     struct stat pathStat;
     if (stat(fullPath.c_str(), &pathStat) != 0)
@@ -110,6 +116,14 @@ HttpResponse RequestHandler::handleGet(const HttpRequest& req, const LocationCon
     response.setHeader("Content-Type", guessMimeType(fullPath));
     response.setHeader("Connection", "close");
     response.setBody(contents.str());
+
+    ////
+std::cout << "URL:      " << req.getPath() << std::endl;
+std::cout << "LOCATION: " << loc.path << std::endl;
+std::cout << "ROOT:     " << loc.root << std::endl;
+std::cout << "RELATIVE: " << relativePart << std::endl;
+std::cout << "FULL:     " << fullPath << std::endl;
+    ////
     return response;
 }
 

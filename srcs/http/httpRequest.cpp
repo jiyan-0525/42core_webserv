@@ -6,13 +6,20 @@ HttpRequest::~HttpRequest() {}
 
 void HttpRequest::parseRequest(const std::string& rawRequest) {
     size_t headerEnd = rawRequest.find("\r\n\r\n");
+    size_t delimiterLen = 4;
+
+    if (headerEnd == std::string::npos)
+    {
+        headerEnd = rawRequest.find("\n\n");
+        delimiterLen = 2;
+    }
     std::string headerPart;
     if (headerEnd == std::string::npos) {
         headerPart = rawRequest;
         this->_body = "";
     } else {
         headerPart = rawRequest.substr(0, headerEnd);
-        this->_body = rawRequest.substr(headerEnd + 4);
+        this->_body = rawRequest.substr(headerEnd + delimiterLen);
     }
 
     std::istringstream requestStream(headerPart);

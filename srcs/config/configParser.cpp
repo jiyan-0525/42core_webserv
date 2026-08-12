@@ -154,6 +154,10 @@ LocationConfig ConfigParser::_parseLocationBlock()
                 {
                     location.methods.push_back(method);
                 }
+                else
+                {
+                    throw std::runtime_error("ConfigParser: invalid HTTP method '" + method + "'");
+                }
             }
             _expectToken(";");
         }
