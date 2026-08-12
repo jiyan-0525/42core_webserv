@@ -1,0 +1,127 @@
+        /* 全局样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #e6e6e6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* 标题样式 */
+        h1, a {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, #00dbde, #ff4901);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 5px #00dbde, 0 0 10px #fc00ff;
+            }
+            to {
+                text-shadow: 0 0 10px #00dbde, 0 0 20px #00ff37, 0 0 30px #0044ff;
+            }
+        }
+
+        /* 子标题样式 */
+        p {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+
+        /* 按钮样式 */
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(45deg, #dbe487, #ff0000);
+            color: #1a1a2e;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            margin: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 219, 222, 0.3);
+        }
+
+        /* 42 Logo 样式 */
+        .logo {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: #00dbde;
+            text-shadow: 0 0 10px rgba(0, 219, 222, 0.5);
+        }
+
+        /* 容器样式 */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .result-msg {
+            font-size: 0.95rem;
+            color: #00dbde;
+            margin-top: 10px;
+            word-break: break-word;
+        }
+
+        input[type="text"] {
+            font-size: 1rem;
+        }
+
+        iframe {
+            width: 100%;
+            height: 220px;
+            border-radius: 10px;
+            border: none;
+            background: white;
+            margin: 15px 0;
+        }
+
+        /* 页脚样式 */
+        footer {
+            margin-top: 50px;
+            font-size: 0.9rem;
+            color: #a0a0a0;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            p {
+                font-size: 1rem;
+            }
+            .logo {
+                font-size: 3rem;
+            }
+        }

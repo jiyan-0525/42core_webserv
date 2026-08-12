@@ -100,7 +100,7 @@ HttpResponse RequestHandler::handleGet(const HttpRequest& req, const LocationCon
 
     std::ifstream file(fullPath);
     if (!file.is_open())
-        return buildError(404, server);
+        return buildError(403, server);
 
     std::ostringstream contents;
     contents << file.rdbuf();

@@ -1,0 +1,2 @@
+hello!
+to test this you have first to 'chmod 000 this_file' in bash
