@@ -183,26 +183,6 @@ bool Server::isListeningSocket(int fd)
     return false;
 }
 
-// static size_t getContentLength(const std::string& buffer)
-// {
-//     size_t pos = buffer.find("Content-Length:");
-
-//     if (pos == std::string::npos)
-//         return 0; // No Content-Length header
-
-//     pos += std::string("Content-Length:").length();
-
-//     // Skip spaces after :
-//     while (buffer[pos] == ' ')
-//         pos++;
-
-//     size_t end = buffer.find("\r\n", pos);
-
-//     std::string length = buffer.substr(pos, end - pos);
-
-//     return std::atoi(length.c_str());
-// }
-
 static size_t getContentLength(const std::string& buffer)
 {
     size_t pos = buffer.find("Content-Length:");
@@ -228,29 +208,6 @@ static size_t getContentLength(const std::string& buffer)
     std::string length = buffer.substr(pos, end - pos);
     return std::atoi(length.c_str());
 }
-
-// bool Server::requestComplete(int fd)
-// {
-//     std::map<int, Client>::iterator it = clients.find(fd);
-//     if (it == clients.end())
-//         return (false);
-
-//     size_t headerEnd = it->second.buffer.find("\r\n\r\n");
-//     // Haven't received all headers yet
-//     if (headerEnd == std::string::npos)
-//         return false;
-//     if (it->second.buffer.find("GET") != std::string::npos || it->second.buffer.find("DELETE") != std::string::npos) //so a position was found
-//         return (true);
-//     if (it->second.buffer.find("POST") != std::string::npos)
-//     {
-//         size_t contentLength = getContentLength(it->second.buffer);
-//         size_t bodySize = it->second.buffer.size() - (headerEnd + 4);
-
-//         if (bodySize >= contentLength)
-//             return (true);
-//     }
-//     return (false);
-// }
 
 bool Server::requestComplete(int fd)
 {
@@ -291,18 +248,6 @@ bool Server::requestComplete(int fd)
 
     return false;
 }
-
-// bool Server::knownRequest(int fd) // I only want to accept GET, DELETE and POST requests
-// {
-//     std::map<int, Client>::iterator it = clients.find(fd);
-//     if (it == clients.end())
-//         return (false);
-
-//     if (it->second.buffer.find("GET") != std::string::npos || it->second.buffer.find("DELETE") != std::string::npos || it->second.buffer.find("POST") != std::string::npos) //so a position was found
-//         return (true);
-//     std::cout << "My client received an unknown request" << std::endl;
-//     return (false);
-// }
 
 bool Server::knownRequest(int fd)
 {
