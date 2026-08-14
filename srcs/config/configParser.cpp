@@ -75,14 +75,10 @@ void ConfigParser::_parse() {
             _servers.push_back(_parseServerBlock());
         }
         else
-        {
             throw std::runtime_error("ConfigParser: expected 'server', got '" + _currentToken() + "'");
-        }
     }
     if (_servers.empty())
-    {
         throw std::runtime_error("No server blocks found in configuration.");
-    }
 }
 
 ServerConfig ConfigParser::_parseServerBlock() {
@@ -114,13 +110,9 @@ ServerConfig ConfigParser::_parseServerBlock() {
             _expectToken(";");
         }
         else if (directive == "location")
-        {
             server.locations.push_back(_parseLocationBlock());
-        }
         else
-        {
             throw std::runtime_error("ConfigParser: unknown directive '" + directive + "'");
-        }
     }
     _expectToken("}");
     return server;
@@ -151,13 +143,9 @@ LocationConfig ConfigParser::_parseLocationBlock()
             {
                 std::string method = _consumeToken();
                 if (method == "GET" || method == "POST" || method == "DELETE")
-                {
                     location.methods.push_back(method);
-                }
                 else
-                {
                     throw std::runtime_error("ConfigParser: invalid HTTP method '" + method + "'");
-                }
             }
             _expectToken(";");
         }
@@ -193,9 +181,7 @@ LocationConfig ConfigParser::_parseLocationBlock()
             _expectToken(";");
         }
         else
-        {
             throw std::runtime_error("ConfigParser: unknown directive '" + directive + "'");
-        }
     }
     _expectToken("}");
     return location;
