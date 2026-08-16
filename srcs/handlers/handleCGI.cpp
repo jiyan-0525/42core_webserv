@@ -88,7 +88,7 @@ HttpResponse RequestHandler::handleCgi(const HttpRequest& req, const LocationCon
         pfd.revents = 0;
 
         int pollRes = poll(&pfd, 1, stepMs);
-        if (pollRes > 0 && (pfd.revents & POLLIN))
+        if (pollRes > 0 && (pfd.revents & (POLLIN | POLLHUP)))
         {
             ssize_t n = read(outPipe[0], buffer, sizeof(buffer));
             if (n > 0)
