@@ -111,6 +111,10 @@ Purpose: Saves the output to a file. Use -o filename to specify a custom name, o
 
 Example: curl -O [https://example.com/file.zip](https://example.com/file.zip)
 
+### This command creates a file exactly 11 MB in size by writing null bytes or repeated blocks:
+```bash
+dd if=/dev/zero of=large_file.txt bs=1M count=11
+```
 
 ```bash
 # GET (list directory with autoindex)
