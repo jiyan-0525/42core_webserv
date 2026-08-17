@@ -40,6 +40,7 @@ private:
     // non-copyable
     ConfigParser(const ConfigParser& other);
     ConfigParser& operator=(const ConfigParser& other);
+
 };
 
 #endif
