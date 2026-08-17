@@ -71,12 +71,51 @@ curl --resolve example.com:8081:127.0.0.1 http://example.com:8081/
 curl --resolve foo.com:8082:127.0.0.1 http://foo.com:8082/
 ```
 
-### Test HTTP methods
+## Test HTTP methods
+
+### Here is a practical curl command reference and learning guide covering the flags you mentioned, along with the most essential options used in everyday development:
+
+curl -V (or --version)
+
+Purpose: Displays the installed version of curl along with supported protocols and built-in features (like SSL backends and compression support).
+
+Example: curl -V
+
+curl -s (or --silent)
+
+Purpose: Silent mode. It suppresses progress meters and error messages, which is great for keeping output clean in scripts. Combine it with -S (--show-error) to still print errors if things fail.
+
+Example: curl -s -S [https://api.example.com](https://api.example.com)
+
+curl -x (or --proxy)
+
+Purpose: Routes your request through a proxy server (supports HTTP, HTTPS, and SOCKS proxies).
+
+Example: curl -x [http://127.0.0.1:8080](http://127.0.0.1:8080) [https://www.google.com](https://www.google.com)
+
+curl -I (or --head)
+
+Purpose: Fetches only the HTTP response headers without downloading the body content, making it ideal for checking server headers quickly.
+
+Example: curl -I [https://github.com](https://github.com)
+
+curl -X (or --request)
+
+Purpose: Specifies a custom HTTP method for the request (e.g., GET, POST, PUT, DELETE).
+
+Example: curl -X POST -d "data=test" [https://api.example.com](https://api.example.com)
+
+curl -o / -O
+
+Purpose: Saves the output to a file. Use -o filename to specify a custom name, or -O to keep the remote filename.
+
+Example: curl -O [https://example.com/file.zip](https://example.com/file.zip)
+
 
 ```bash
 # GET (list directory with autoindex)
 curl -v http://localhost:8080/uploads/
-
+curl -X GET http://localhost:8080/
 # POST (submit raw data)
 curl -v -X POST -d "test data" http://localhost:8080/data
 
@@ -119,7 +158,7 @@ valgrind --leak-check=full --show-leak-kinds=all ./webserv
 
 ## Project structure
 
-```
+```bash
 42webserv_new/
 ├── Makefile
 ├── config/
