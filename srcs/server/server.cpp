@@ -48,12 +48,14 @@ void Server::eventLoop(void)
 
             if (this->isListeningSocket(fd) == true)  //--------------Is there a new client that want to connect?------------------
             {
-                    std::cout << "before_accepting_new_client" << std::endl;
+                    if (clients.size() < 2)
+                        std::cout << "before_accepting_new_client" << std::endl;
                     this->acceptNewClient(fd);
             }
             else  //-------------Is there an event from an already connected client? //check for the readiness of I/O Input/Output
             {
-                std::cout << "Event from an already connected client" << std::endl;
+                if (clients.size() < 2)
+                    std::cout << "Event from an already connected client" << std::endl;
                 if (events[i].events & EPOLLIN) //checking for reading
                 {
                     this->receiveData(fd);
@@ -65,9 +67,7 @@ void Server::eventLoop(void)
             }
         }
     }
-    std::cout << "\nFinal clients.size() = "
-          << clients.size()
-          << std::endl;
+    std::cout << "\nFinal clients.size() = " << clients.size() << std::endl;
     this->server_cleanup();
     return;
 }
@@ -146,7 +146,8 @@ void Server::initializeEpoll(void)
 
 void Server::acceptNewClient(int listening_fd)
 {
-    std::cout << "new_client_COMING from listening_socket_fd: " << listening_fd << std::endl;
+    if (clients.size() < 2)
+        std::cout << "new_client_COMING from listening_socket_fd: " << listening_fd << std::endl;
     sockaddr_in client_addr;
     socklen_t client_len = sizeof(client_addr);
 
@@ -164,9 +165,8 @@ void Server::acceptNewClient(int listening_fd)
     if (add == -1)
         return;
     this->clients.insert(std::make_pair(client_fd, Client(client_fd)));
-    std::cout << "New client: " << client_fd
-          << " | clients.size() = " << clients.size()
-          << std::endl;
+    if (clients.size() < 2)
+        std::cout << "New client: " << client_fd << " | clients.size() = " << clients.size() << std::endl;
 }
 
 bool Server::isListeningSocket(int fd)
@@ -176,7 +176,8 @@ bool Server::isListeningSocket(int fd)
     {
         if (fd == *it)
         {
-            std::cout << "Event from listenning socket number:  " << fd << std::endl;
+            if (clients.size() < 2)
+                std::cout << "Event from listenning socket number:  " << fd << std::endl;
             return (true);
         }
     }
@@ -271,7 +272,8 @@ bool Server::knownRequest(int fd)
         return true;
     }
 
-    std::cout << "My client received an unknown request" << std::endl;
+    if (clients.size() < 2)
+        std::cout << "My client received an unknown request" << std::endl;
     return false;
 }
 
@@ -290,21 +292,26 @@ void Server::receiveData(int fd)
     {
         buffer[bytesRecv] = '\0';      // Make it a C-string
 
-        std::cout << "bytes_received_from_client" << std::endl;
+        if (clients.size() < 2)
+            std::cout << "bytes_received_from_client" << std::endl;
         std::map<int, Client>::iterator it = clients.find(fd);
         if (it == clients.end())
             return;
         else if (it != clients.end())
         {
-            std::cout << "filled the client struct with the HTTP request" << std::endl;
+            if (clients.size() < 2)
+                std::cout << "filled the client struct with the HTTP request" << std::endl;
             it->second.buffer.append(buffer, bytesRecv); 
         }
         if (knownRequest(fd) == false)
             removeClient(fd);
         if (requestComplete(fd) == true) //Once the request is complete and it is a known request, I want epoll() to tell me when the socket is ready for writing
         {
-            std::cout << "RECEIVED COMPLETE REQUEST" << std::endl;
-            std::cout << it->second.buffer << std::endl;
+            if (clients.size() < 2)
+            {
+                std::cout << "RECEIVED COMPLETE REQUEST" << std::endl;
+                std::cout << it->second.buffer << std::endl;
+            }
             struct epoll_event event = {};
             event.events = EPOLLOUT;
             event.data.fd = fd;
@@ -350,8 +357,12 @@ void Server::sendResponse(int fd)
     HttpResponse response = RequestHandler::processRequest(request, server);
     std::string responseText = response.serialize();
 
-    std::cout << "===== HTTP RESPONSE =====\n" << std::endl;
-    std::cout << responseText << std::endl;
+    if (clients.size() < 2)
+    {
+        std::cout << "===== HTTP RESPONSE =====\n" << std::endl;
+        std::cout << responseText << std::endl;
+    }
+
     bytesSent = send(fd, responseText.c_str(), responseText.size(), 0);
     if (bytesSent >= 0)
     {
@@ -370,9 +381,8 @@ void Server::removeClient(int fd)
     std::map<int, Client>::iterator it = clients.find(fd);
     it->second.buffer.clear();
     clients.erase(fd);
-    std::cout << "Removed client: " << fd
-          << " | clients.size() = " << clients.size()
-          << std::endl;
+    if (clients.size() < 2)
+        std::cout << "Removed client: " << fd << " | clients.size() = " << clients.size() << std::endl;
 }
 
 void Server::server_cleanup(void)
@@ -398,12 +408,6 @@ void Server::server_cleanup(void)
     close(this->epfd);
 }
 
-//NEXT STEPS
-
-//I close too early
-//if ("Connection: close\r\n" == false)
-//The connection with my client needs to be kept alive
-
 
 //YOUTUBE VIDEO
 //https://www.youtube.com/watch?v=w2kKgJY4vqY
@@ -417,44 +421,3 @@ void Server::server_cleanup(void)
 //MANUAL 
 //https://man7.org/linux/man-pages/man7/epoll.7.html
 //epoll(7) — Linux manual page
-
-//Error reporting
-//errno
-//strerror()
-//std::cerr << strerror(errno) << std::endl;
-
-
-//Your program must not crash under any circumstances (even if it 
-//runs out of memory) or terminate unexpectedly.
-
-// That means your server should survive situations like:
-
-// a client disconnects unexpectedly
-// a client sends malformed data
-// a client closes the connection while you're writing
-// accept() fails
-// recv() fails
-// send() fails
-// poll() returns an error
-
-// The important word is:
-// Handle errors gracefully.
-
-
-//Never do a read or a write without going through poll().
-//You're not checking whether the socket is writable.
-//I will need to watch POLLIN and POLLOUT
-
-// try
-// {
-//     /* code */
-// }
-// catch(const std::exception& e)
-// {
-//     std::cerr << e.what() << '\n';
-// }
-
-
-
-
-

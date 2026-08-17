@@ -3,7 +3,7 @@ siege -b -c250 -t90s http://localhost:8080
 siege -b -c250 -r100 http://localhost:8080
 
 Add a delay between client requests (2 seconds):
-siege -c250 -td2 http://localhost:8080
+siege -c250 -d2 -t3m http://localhost:8080
 
 
 Ensure no memory leaks:

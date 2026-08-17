@@ -24,7 +24,7 @@ class Server {
 	std::map<int, size_t> listeningSocketToServer;
 
 	int epfd; //needs to be initilazied by the constructor
-	struct epoll_event events[100];
+	struct epoll_event events[100]; //that's the maximum number of fds (representing events) that the epoll_wait() function will return
 
 	Server(const std::vector<ServerConfig>& servers); //Initializer
 
@@ -38,20 +38,13 @@ class Server {
 	void acceptNewClient(int listening_fd);
 	void removeClient(int fd);
 
-	// void handleClientEvent(int fd);
 	void receiveData(int fd);
 	bool knownRequest(int fd);
 	bool requestComplete(int fd);
 	void sendResponse(int fd);
-	// void processRequest(int fd);
 
 	void server_cleanup(void);
 
 };
-
-// if (isListeningSocket(fd))
-//     acceptNewClient(fd);
-// else
-//     handleClientEvent(fd);
 
 #endif
