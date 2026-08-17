@@ -135,6 +135,20 @@ HttpResponse RequestHandler::handleCgi(const HttpRequest& req, const LocationCon
     }
     close(outPipe[0]);
 
+    int finalStatus = 0;
+    pid_t finalWait = waitpid(pid, &finalStatus, WNOHANG);
+    if (finalWait == pid)
+    {
+        if (!WIFEXITED(finalStatus) || WEXITSTATUS(finalStatus) != 0)
+            return buildError(500, server);
+    }
+    else
+    {
+        waitpid(pid, &finalStatus, 0);
+        if (!WIFEXITED(finalStatus) || WEXITSTATUS(finalStatus) != 0)
+            return buildError(500, server);
+    }
+
     HttpResponse response;
     applyCgiHeadersAndBody(cgiOutput, response);
     return response;

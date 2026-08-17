@@ -146,6 +146,9 @@ curl -v -X POST \
 # POST raw data
 curl -s "http://localhost:8080/cgi-bin/test_post.py" -X POST -d "test data"
 
+# Test
+curl -i -X POST -d "user=alex&age=25" "http://localhost:8082/cgi-bin/test.py?city=Heilbronn&role=dev"
+
 # Current time example
 curl -s http://localhost:8080/cgi-bin/time.py
 ```
