@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>CGI POST Test</title>
+    <style>
+        body { font-family: sans-serif; margin: 40px; }
+        form { display: flex; flex-direction: column; width: 300px; gap: 10px; }
+        input, button { padding: 8px; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <h1>Test CGI POST-request</h1>
+
+    <!-- Important: "action" refers to CGI script, and “method” is POST -->
+    <form action="/cgi-bin/test.py" method="POST">
+        <label for="username">Name:</label>
+        <input type="text" id="username" name="username" value="Alex">
+
+        <label for="message">Message:</label>
+        <input type="text" id="message" name="message" value="Hello 42 Webserv!">
+
+        <button type="submit">Send POST request</button>
+    </form>
+</body>
+</html>
