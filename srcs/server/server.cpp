@@ -51,7 +51,7 @@ void Server::eventLoop(void)
                     std::cout << "before_accepting_new_client" << std::endl;
                     this->acceptNewClient(fd);
             }
-            else  //-------------Is there an event from an already connected client? 
+            else  //-------------Is there an event from an already connected client? //check for the readiness of I/O Input/Output
             {
                 std::cout << "Event from an already connected client" << std::endl;
                 if (events[i].events & EPOLLIN) //checking for reading
