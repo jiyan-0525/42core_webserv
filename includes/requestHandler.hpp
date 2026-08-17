@@ -11,6 +11,7 @@ class RequestHandler {
         matching location from the server configuration, validates the request,
         dispatches it to the appropriate handler (GET, POST, DELETE, etc.),
         and returns the generated response.*/
+        static HttpResponse buildDirectoryListing(const std::string& dirPath, const std::string& urlPath, const ServerConfig& server);
         static HttpResponse processRequest(const HttpRequest& req, const ServerConfig& server);
     private:
         static const LocationConfig* matchLocation(const ServerConfig& server, const std::string& url);// Finds the best matching location for a requested URL

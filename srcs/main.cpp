@@ -7,6 +7,7 @@
 #include <csignal>
 
 int main(int argc, char **argv) {
+    srand(time(nullptr));
     signal(SIGINT, handleSignal);
     signal(SIGTERM, handleSignal);
     signal(SIGPIPE, SIG_IGN);

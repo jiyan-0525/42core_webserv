@@ -148,13 +148,13 @@ valgrind --leak-check=full --show-leak-kinds=all ./webserv
 
 ## Documentation & references
 
+- **List of HTTP status codes**: https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
 - **Beej's Guide to Network Programming** — sockets, `bind()`, `listen()`, `accept()`: https://beej.us/guide/bgnet/
 - **From the scratch — HTTP server** — what you need to know to build a simple HTTP server: https://medium.com/from-the-scratch/http-server-what-do-you-need-to-know-to-build-a-simple-http-server-from-scratch-d1ef8945e4fa
 - **Webserv: building a non-blocking web server in C++ (a 42 project)**: https://m4nnb3ll.medium.com/webserv-building-a-non-blocking-web-server-in-c-98-a-42-project-04c7365e4ec7
 - **Berkeley sockets** (Wikipedia): https://en.wikipedia.org/wiki/Berkeley_sockets
 - **RFC 7230 — HTTP/1.1 Message Syntax and Routing**: https://datatracker.ietf.org/doc/html/rfc7230
 - **HTTP methods handbook (GET, POST, DELETE…)**: https://www.freecodecamp.org/news/learn-http-methods-like-get-post-and-delete-a-handbook-with-code-examples/#heading-get-method
-- **List of HTTP status codes**: https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
 - **NGINX configuration syntax** (the style our config format imitates): https://nginx.org/en/docs/beginners_guide.html
 - **`epoll` man page / tutorial**: https://man7.org/linux/man-pages/man7/epoll.7.html
 - **Common Gateway Interface (CGI)** specification: https://www.rfc-editor.org/rfc/rfc3875

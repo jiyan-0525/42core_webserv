@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <dirent.h>
 
 // ---------- Helper function to check if a URL matches a location path ----------
 bool isPrefixMatch(const std::string& url, const std::string& locPath)
@@ -84,6 +85,39 @@ std::string RequestHandler::guessMimeType(const std::string& path)
     return "text/plain";
 }
 
+HttpResponse RequestHandler::buildDirectoryListing(const std::string& dirPath, const std::string& urlPath, const ServerConfig& server)
+{
+    (void)server;
+    std::ostringstream html;
+    html << "<html><head><title>Index of " << urlPath << "</title></head>"
+         << "<body><h1>Index of " << urlPath << "</h1><ul>";
+
+    DIR* dir = opendir(dirPath.c_str());
+    if (dir != nullptr)
+    {
+        struct dirent* entry;
+        while ((entry = readdir(dir)) != nullptr)
+        {
+            std::string name = entry->d_name;
+            if (name == ".")
+                continue;
+            html << "<li><a href=\"" << urlPath;
+            if (!urlPath.empty() && urlPath.back() != '/')
+                html << "/";
+            html << name << "\">" << name << "</a></li>";
+        }
+        closedir(dir);
+    }
+    html << "</ul></body></html>";
+
+    HttpResponse response;
+    response.setStatus(200, "OK");
+    response.setHeader("Content-Type", "text/html");
+    response.setHeader("Connection", "close");
+    response.setBody(html.str());
+    return response;
+}
+
 // ---------- GET: Return a static file ----------
 HttpResponse RequestHandler::handleGet(const HttpRequest& req, const LocationConfig& loc, const ServerConfig& server)
 {
@@ -101,8 +135,33 @@ HttpResponse RequestHandler::handleGet(const HttpRequest& req, const LocationCon
     if (stat(fullPath.c_str(), &pathStat) != 0)
         return buildError(404, server);
 
-    if (S_ISDIR(pathStat.st_mode) && !loc.index.empty())
-        fullPath += "/" + loc.index;
+    if (S_ISDIR(pathStat.st_mode))
+    {
+        // checking index-file, if it is specified
+        if (!loc.index.empty())
+        {
+            std::string indexPath = fullPath;
+            if (!indexPath.empty() && indexPath.back() != '/')
+                indexPath += "/";
+            indexPath += loc.index;
+
+            struct stat indexStat;
+            if (stat(indexPath.c_str(), &indexStat) == 0 && !S_ISDIR(indexStat.st_mode))
+                fullPath = indexPath;   // index exists - use it
+            else if (loc.autoindex)
+                return buildDirectoryListing(fullPath, req.getPath(), server); // index not found, but autoindex on
+            else
+                return buildError(403, server);
+        }
+        else if (loc.autoindex)
+        {
+            return buildDirectoryListing(fullPath, cleanPath, server);
+        }
+        else
+        {
+            return buildError(403, server);   // no index, no autoindex - nothing to show
+        }
+    }
 
     std::ifstream file(fullPath);
     if (!file.is_open())
@@ -116,14 +175,6 @@ HttpResponse RequestHandler::handleGet(const HttpRequest& req, const LocationCon
     response.setHeader("Content-Type", guessMimeType(fullPath));
     response.setHeader("Connection", "close");
     response.setBody(contents.str());
-
-    ////
-std::cout << "URL:      " << req.getPath() << std::endl;
-std::cout << "LOCATION: " << loc.path << std::endl;
-std::cout << "ROOT:     " << loc.root << std::endl;
-std::cout << "RELATIVE: " << relativePart << std::endl;
-std::cout << "FULL:     " << fullPath << std::endl;
-    ////
     return response;
 }
 
@@ -132,6 +183,10 @@ HttpResponse RequestHandler::handlePost(const HttpRequest& req, const LocationCo
 {
     if (loc.upload_dir.empty())
         return buildError(403, server);
+
+    size_t maxSize = (loc.client_max_body_size > 0) ? loc.client_max_body_size : server.client_max_body_size;
+    if (req.getBody().size() > maxSize)
+        return buildError(413, server);
 
     std::string cleanPath = stripQuery(req.getPath());
     std::string filename = cleanPath.substr(loc.path.size());
@@ -146,6 +201,9 @@ HttpResponse RequestHandler::handlePost(const HttpRequest& req, const LocationCo
 
     if (req.hasHeader("X-Filename")) // optional custom header approach
         filename = req.getHeader("X-Filename");
+
+    if (filename.find("..") != std::string::npos)
+    return buildError(400, server);
 
     std::string fullPath = loc.upload_dir + "/" + filename;
 
