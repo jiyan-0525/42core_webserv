@@ -1,4 +1,4 @@
-*This project has been created as part of the 42 curriculum by jiyawang, mhnatovs, lucie.*
+*This project has been created as part of the 42 curriculum by jiyawang, mhnatovs, lusimon.*
 
 # Description
 
@@ -21,7 +21,7 @@ The server reads an NGINX-style configuration file at startup, opens one listeni
 
 # Instructions
 
-## Prerequisites
+## Installation
 
 - Linux / macOS with a C++ compiler
 - `make`
