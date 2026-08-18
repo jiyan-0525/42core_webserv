@@ -304,7 +304,12 @@ void Server::receiveData(int fd)
             it->second.buffer.append(buffer, bytesRecv); 
         }
         if (knownRequest(fd) == false)
+        {
+            const char* errorResponse = "HTTP/1.1 501 Not Implemented\r\nConnection: close\r\nContent-Length: 0\r\n\r\n";
+            send(fd, errorResponse, strlen(errorResponse), 0);
             removeClient(fd);
+            return;
+        }
         if (requestComplete(fd) == true) //Once the request is complete and it is a known request, I want epoll() to tell me when the socket is ready for writing
         {
             if (clients.size() < 2)
