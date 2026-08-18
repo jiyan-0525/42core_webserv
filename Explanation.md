@@ -93,7 +93,7 @@ Browser (Chrome) types http://localhost:8080
                         Browser renders
 ```
 
-### 📦 Your Project Components Explained
+### 📦 The Project Components Explained
 
 #### 1. Config Parser (`ConfigParser` + `Config`)
 
