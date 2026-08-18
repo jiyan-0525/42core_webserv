@@ -1,7 +1,7 @@
-#include "configParser.hpp"
-#include "client.hpp"
-#include "server.hpp"
-#include "signals.hpp"
+#include "includes/configParser.hpp"
+#include "includes/client.hpp"
+#include "includes/server.hpp"
+#include "includes/signals.hpp"
 #include <iostream>
 #include <string>
 #include <csignal>

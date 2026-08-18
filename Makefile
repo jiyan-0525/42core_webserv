@@ -7,7 +7,7 @@ INCLUDES	= -I includes
 SRCS_DIR	= srcs
 OBJS_DIR	= objs
 
-SRCS		= $(SRCS_DIR)/main.cpp \
+SRCS		=  main.cpp \
 			  $(SRCS_DIR)/config/configParser.cpp \
 			  $(SRCS_DIR)/http/httpRequest.cpp \
 			  $(SRCS_DIR)/http/httpResponse.cpp \

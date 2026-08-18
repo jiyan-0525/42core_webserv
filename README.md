@@ -18,7 +18,6 @@ The server reads an NGINX-style configuration file at startup, opens one listeni
 - **Custom error pages** — 403, 404, 500, 504 configured per server
 - **Multiple virtual servers** — different ports and `server_name`s in a single config file
 - **Graceful shutdown** — handles `SIGINT`/`SIGTERM` and cleans up all sockets
-- **Keep-alive connections** — persistent client connections
 
 # Instructions
 
@@ -71,9 +70,7 @@ curl --resolve example.com:8081:127.0.0.1 http://example.com:8081/
 curl --resolve foo.com:8082:127.0.0.1 http://foo.com:8082/
 ```
 
-## Test HTTP methods
-
-### Here is a practical curl command reference and learning guide covering the flags you mentioned, along with the most essential options used in everyday development:
+### Here is a practical curl command reference and learning guide, along with the most essential options used in everyday development:
 
 curl -V (or --version)
 
@@ -115,6 +112,8 @@ Example: curl -O [https://example.com/file.zip](https://example.com/file.zip)
 ```bash
 dd if=/dev/zero of=large_file.txt bs=1M count=11
 ```
+
+## Test HTTP methods
 
 ```bash
 # GET (list directory with autoindex)
@@ -207,11 +206,10 @@ valgrind --leak-check=full --show-leak-kinds=all ./webserv
 
 ## How AI was used
 
-<!-- AI (code-assistance tools) was used during development for the following tasks:
+AI (code-assistance tools) was used during development for the following tasks:
 
-- **Conceptual explanation & planning** — understanding socket programming, the `epoll` event loop, HTTP request/response parsing, and CGI execution flow (`fork`, `pipe`, `dup2`, `execve`). See `Explanation.md` for the learning notes produced with AI assistance.
-- **Debugging assistance** — identifying issues in the event loop (e.g., socket blocking states, partial request reads, `SIGPIPE` handling) and fix suggestions.
-- **Code review / refactoring suggestions** — e.g., structuring the request handler so that routing, method dispatch, and error-page generation are cleanly separated.
-- **Writing test/supportive documentation** — generating a summary of the request/response pipeline in `websevlogic.txt` and example `curl` commands used for manual testing.
+- **Conceptual explanation & planning** — understanding socket programming, the `epoll` event loop, HTTP request/response parsing, and CGI execution flow (`fork`, `pipe`, `dup2`, `execve`).
+- **Debugging assistance / Code review** — identifying issues in the event loop (e.g., socket blocking states, partial request reads, `SIGPIPE` handling) and fix suggestions.
+- **Writing test/supportive documentation** — generating a summary of the request/response pipeline in `Explanation.md ` curl commands used for manual testing.
 
-All core implementation decisions — the epoll-based event loop, the config parser design, the routing logic, and the CGI timeout handling — were made and implemented by the team. AI was used as an explanatory and debugging companion, not as the author of the project code. -->
+All core implementation decisions — the epoll-based event loop, the config parser design, the routing logic, and the CGI timeout handling — were made and implemented by the team. AI was used as an explanatory and debugging companion, not as the author of the project code.
