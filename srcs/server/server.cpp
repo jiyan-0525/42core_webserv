@@ -115,8 +115,7 @@ void Server::createListeningSocket(int port, size_t serverIndex) //the function 
     }
     freeaddrinfo(result);
 
-    // 4. Start listening for incoming connections (like Chrome)
-    //int listen(int socket, int backlog);
+    //Start listening for incoming connections
     //The second parameter, backlog, defines the maximum number of pending connections that can be queued up before connections are refused.
     if (listen(server_fd, SOMAXCONN) < 0) // SOMAXCONN maximum that the Kernel can do 
     {
@@ -166,7 +165,7 @@ void Server::acceptNewClient(int listening_fd)
         return;
     this->clients.insert(std::make_pair(client_fd, Client(client_fd)));
     if (clients.size() < 2)
-        std::cout << "New client: " << client_fd << " | clients.size() = " << clients.size() << std::endl;
+        std::cout << "New client fd: " << client_fd << " | clients.size() = " << clients.size() << std::endl;
 }
 
 bool Server::isListeningSocket(int fd)
@@ -354,10 +353,8 @@ void Server::sendResponse(int fd)
     if (!this->serverConfigs.empty())
         server = this->serverConfigs[matchedIndex];
 
-    // 6. Send a proper HTTP response so Chrome can read it
+    // Send a proper HTTP response so Chrome can read it
     // The browser needs the "HTTP/1.1 200 OK" header to know it's a valid webpage
-    // The client can almost always receive a response
-    //So it is actually better to check if he can receive a response when the response is ready
 
     HttpResponse response = RequestHandler::processRequest(request, server);
     std::string responseText = response.serialize();
@@ -387,7 +384,7 @@ void Server::removeClient(int fd)
     it->second.buffer.clear();
     clients.erase(fd);
     if (clients.size() < 2)
-        std::cout << "Removed client: " << fd << " | clients.size() = " << clients.size() << std::endl;
+        std::cout << "Removed client with fd: " << fd << " | clients.size() = " << clients.size() << std::endl;
 }
 
 void Server::server_cleanup(void)
