@@ -55,6 +55,9 @@ curl -X GET http://localhost:8080/
 # POST (submit raw data)
 curl -v -X POST -d "test data" http://localhost:8080/data
 
+# POST (submit raw picture)
+curl -v -X POST --data-binary "@/home/jiyawang/Pictures/LL.png" -H "X-Filename: LL.png" http://localhost:8080/uploads/xx.png
+
 # Limit the client body test:
 # This command creates a file exactly 4 MB
 
@@ -63,7 +66,7 @@ dd if=/dev/zero of=large_file.txt bs=1M count=4
 curl -X POST -H "Content-Type: text/plain" --data-binary @large_file.txt http://localhost:8080/files
 
 # DELETE a file
-curl -v -X DELETE http://localhost:8080/uploads/myfile.bin
+curl -v -X DELETE http://localhost:8080/uploads/...
 curl -v -X DELETE http://localhost:8080/data/jiyan.txt
 
 # UNKNOWN requests test
