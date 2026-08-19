@@ -76,8 +76,12 @@ curl -X POST -H "Content-Type: text/plain" --data-binary @large_file.txt http://
 # DELETE a file
 curl -v -X DELETE http://localhost:8080/uploads/myfile.bin
 curl -v -X DELETE http://localhost:8080/data/jiyan.txt
-```
 
+# UNKNOWN requests test
+curl -X UNKOWN http://localhost:8080/
+curl -X GET http://localhost:8080/UNKOWNFILE
+
+```
 ### Test CGI (Python)
 
 ```bash
