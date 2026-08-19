@@ -1,4 +1,4 @@
-Maximum request pressure:
+Maximum request pressure: use a BASH terminal
 siege -b -c250 -t90s http://localhost:8080
 siege -b -c250 -r100 http://localhost:8080
 
