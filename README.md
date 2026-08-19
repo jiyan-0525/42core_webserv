@@ -46,17 +46,6 @@ If no configuration file is given, the server loads the default configuration:
 ./webserv config/default.conf
 ```
 
-<!-- ### Built-in test configuration
-
-The provided [`config/default.conf`](config/default.conf) defines four virtual servers:
-
-| Port  | server_name  | Serves                          |
-|-------|--------------|---------------------------------|
-| 8080  | localhost    | Static site, uploads, CGI, data |
-| 8081  | example.com  | Static site (`index1.html`)     |
-| 8082  | foo.com      | Static site (`index2.html`)     |
-| 8084  | test.local   | `www/staticWebsite/`            | -->
-
 ## Test HTTP methods
 
 ```bash
@@ -104,6 +93,34 @@ curl -i -X POST -d "user=alex&age=25" "http://localhost:8082/cgi-bin/test.py?cit
 curl -s http://localhost:8080/cgi-bin/time.py
 ```
 
+### Test telnet
+
+```bash
+# CONECT TO THE SERVER
+telnet localhost 8080
+
+# SEND A REQUEST
+# GET
+GET / HTTP/1.1
+Host: localhost:8080
+Connection: close
+
+#POST
+POST /data HTTP/1.1
+Host: localhost:8080
+Content-Length: 11
+Connection: close
+
+hello world
+
+#DELETE
+DELETE /data/test.txt HTTP/1.1
+Host: localhost:8080
+Connection: close
+
+# PRESS ENTER 2 TIMES
+```
+
 ### Stress testing / memory checks
 
 ```bash
@@ -146,7 +163,7 @@ valgrind --leak-check=full --show-leak-kinds=all ./webserv
 ### Here is a practical curl command reference and learning guide, along with the most essential options used in everyday development:
 
 curl -V (or --version)
-
+curl -i hfvsdxhgf http://localhost:8080  
 Purpose: Displays the installed version of curl along with supported protocols and built-in features (like SSL backends and compression support).
 
 Example: curl -V

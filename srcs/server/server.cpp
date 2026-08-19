@@ -387,7 +387,7 @@ void Server::removeClient(int fd)
     it->second.buffer.clear();
     clients.erase(fd);
     if (clients.size() < 2)
-        std::cout << "Removed client: " << fd << " | clients.size() = " << clients.size() << std::endl;
+        std::cout << "Removed client with fd: " << fd << " | clients.size() = " << clients.size() << std::endl;
 }
 
 void Server::server_cleanup(void)
