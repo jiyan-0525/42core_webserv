@@ -162,6 +162,9 @@ HttpResponse RequestHandler::processRequest(const HttpRequest& req, const Server
         return buildError(404, server);
 
     const std::string& method = req.getMethod();
+    if (method != "GET" && method != "POST" && method != "DELETE")
+        return buildError(501, server);
+    
     if (std::find(loc->methods.begin(), loc->methods.end(), method) == loc->methods.end())
         return buildError(405, server);
 

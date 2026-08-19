@@ -51,6 +51,7 @@ HttpResponse RequestHandler::buildError(int code, const ServerConfig& server)
     std::string reason = (code == 404) ? "Not Found"
                         : (code == 403) ? "Forbidden"
                         : (code == 405) ? "Method Not Allowed"
+                        : (code == 501) ? "Not Implemented"
                         : (code == 500) ? "Internal Server Error"
                         : (code == 504) ? "Gateway Timeout"
                         : "Error";
